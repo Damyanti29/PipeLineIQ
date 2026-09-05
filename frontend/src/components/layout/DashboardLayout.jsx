@@ -8,7 +8,7 @@ export function DashboardLayout() {
   if (!isAuthenticated) return <Navigate to="/login" replace />
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)]">
+    <div className="flex h-screen overflow-hidden bg-(--bg-secondary)">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0 ml-60 transition-all duration-300" id="main-content">
         <Topbar />

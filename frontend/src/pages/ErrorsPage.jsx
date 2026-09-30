@@ -1,137 +1,126 @@
-import { useState } from 'react'
-import { Search, Filter } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { Search, Filter, Bug } from 'lucide-react'
 import { ErrorCard } from '@/components/ui/ErrorCard'
 import { EmptyState } from '@/components/ui/EmptyState'
-import { mockErrors, mockRepositories } from '@/data/mockData'
-import { Bug } from 'lucide-react'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { FilterPills } from '@/components/ui/FilterPills'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { useApi } from '@/hooks/useApi'
+import { listErrors } from '@/services/errorService'
+import { listRepositories } from '@/services/repositoryService'
 
-const SEVERITIES = ['all', 'critical', 'high', 'medium', 'low']
-const STATUSES = ['all', 'open', 'resolved']
+const SEVERITIES = [
+  { value: 'all', label: 'All severities' },
+  { value: 'critical', label: 'Critical' },
+  { value: 'high', label: 'High' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'low', label: 'Low' },
+]
+const STATUSES = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'open', label: 'Open' },
+  { value: 'resolved', label: 'Resolved' },
+  { value: 'ignored', label: 'Ignored' },
+]
 
 export function ErrorsPage() {
-  const [search, setSearch] = useState('')
-  const [severity, setSeverity] = useState('all')
-  const [status, setStatus] = useState('all')
-  const [repoFilter, setRepoFilter] = useState('all')
-  const [sort, setSort] = useState('lastSeen')
+  const [params, setParams] = useSearchParams()
+  const [searchInput, setSearchInput] = useState(params.get('search') ?? '')
 
-  const repoNames = ['all', ...new Set(mockErrors.map(e => e.repositoryName))]
+  // Filters live in the URL so they survive reloads and can be linked to.
+  const filters = {
+    search: params.get('search') ?? '',
+    severity: params.get('severity') ?? 'all',
+    status: params.get('status') ?? 'open',
+    repositoryId: params.get('repositoryId') ?? 'all',
+    sort: params.get('sort') ?? 'last_seen',
+  }
+  const setFilter = (key, value) => {
+    const next = new URLSearchParams(params)
+    if (value === '' || value === undefined) next.delete(key)
+    else next.set(key, value)
+    setParams(next, { replace: true })
+  }
 
-  const filtered = mockErrors
-    .filter(e => {
-      const matchSearch = e.errorType.toLowerCase().includes(search.toLowerCase()) ||
-        e.message.toLowerCase().includes(search.toLowerCase()) ||
-        e.fileName.toLowerCase().includes(search.toLowerCase())
-      return (
-        matchSearch &&
-        (severity === 'all' || e.severity === severity) &&
-        (status === 'all' || e.status === status) &&
-        (repoFilter === 'all' || e.repositoryName === repoFilter)
-      )
-    })
-    .sort((a, b) => {
-      if (sort === 'occurrences') return b.occurrences - a.occurrences
-      if (sort === 'severity') {
-        const order = { critical: 0, high: 1, medium: 2, low: 3 }
-        return order[a.severity] - order[b.severity]
-      }
-      return new Date(b.lastSeen) - new Date(a.lastSeen)
-    })
+  // Keep the box in sync when the URL changes elsewhere (e.g. the navbar search).
+  useEffect(() => setSearchInput(filters.search), [filters.search])
+
+  // Debounce free-text search into the URL. Only `searchInput` should re-arm the timer.
+  useEffect(() => {
+    const handle = setTimeout(() => {
+      if (searchInput.trim() !== filters.search) setFilter('search', searchInput.trim())
+    }, 300)
+    return () => clearTimeout(handle)
+  }, [searchInput])
+
+  const { data: errors, loading, error, reload } = useApi(() => listErrors(filters), [params.toString()])
+  const { data: repositories } = useApi(listRepositories)
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Header */}
       <div>
         <h2 className="text-xl font-bold text-[var(--text-primary)]">Errors</h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-          {filtered.length} grouped error{filtered.length !== 1 ? 's' : ''} across all repositories
-        </p>
+        {errors && (
+          <p className="text-sm text-[var(--text-secondary)] mt-0.5">
+            {errors.length} grouped error{errors.length !== 1 ? 's' : ''}
+          </p>
+        )}
       </div>
 
-      {/* Filters */}
       <div className="card p-4 space-y-4">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)] pointer-events-none" />
             <input
               type="search"
-              placeholder="Search errors..."
+              placeholder="Search by type, message or file…"
               className="input pl-9"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              id="error-search"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              aria-label="Search errors"
             />
           </div>
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-[var(--text-muted)]" />
-            <select
-              className="input py-2 w-auto"
-              value={sort}
-              onChange={e => setSort(e.target.value)}
-              id="sort-select"
-            >
-              <option value="lastSeen">Sort: Last seen</option>
+            <select className="input py-2 w-auto" value={filters.sort} onChange={(e) => setFilter('sort', e.target.value)} aria-label="Sort">
+              <option value="last_seen">Sort: Last seen</option>
               <option value="occurrences">Sort: Occurrences</option>
               <option value="severity">Sort: Severity</option>
             </select>
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {/* Severity pills */}
-          <div className="flex gap-1 flex-wrap">
-            {SEVERITIES.map(s => (
-              <button
-                key={s}
-                onClick={() => setSeverity(s)}
-                className={severity === s
-                  ? 'badge bg-brand-500/10 text-brand-400 border border-brand-500/20 px-3 py-1'
-                  : 'badge bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border)] px-3 py-1 hover:border-brand-500/30 transition-colors'}
-              >
-                {s === 'all' ? 'All severities' : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-          {/* Status pills */}
-          <div className="flex gap-1 flex-wrap">
-            {STATUSES.map(s => (
-              <button
-                key={s}
-                onClick={() => setStatus(s)}
-                className={status === s
-                  ? 'badge bg-brand-500/10 text-brand-400 border border-brand-500/20 px-3 py-1'
-                  : 'badge bg-[var(--bg-tertiary)] text-[var(--text-muted)] border border-[var(--border)] px-3 py-1 hover:border-brand-500/30 transition-colors'}
-              >
-                {s === 'all' ? 'All statuses' : s.charAt(0).toUpperCase() + s.slice(1)}
-              </button>
-            ))}
-          </div>
-          {/* Repo filter */}
+        <div className="flex flex-wrap gap-2 items-center">
+          <FilterPills options={SEVERITIES} value={filters.severity} onChange={(v) => setFilter('severity', v)} />
+          <FilterPills options={STATUSES} value={filters.status} onChange={(v) => setFilter('status', v)} />
           <select
             className="input py-1 w-auto text-xs"
-            value={repoFilter}
-            onChange={e => setRepoFilter(e.target.value)}
-            id="repo-filter"
+            value={filters.repositoryId}
+            onChange={(e) => setFilter('repositoryId', e.target.value)}
+            aria-label="Repository"
           >
-            {repoNames.map(r => (
-              <option key={r} value={r}>{r === 'all' ? 'All repos' : r}</option>
+            <option value="all">All repositories</option>
+            {(repositories ?? []).map((repo) => (
+              <option key={repo.id} value={repo.id}>{repo.full_name}</option>
             ))}
           </select>
         </div>
       </div>
 
-      {/* Error list */}
-      {filtered.length === 0 ? (
+      {loading ? (
+        <LoadingState />
+      ) : error ? (
+        <ErrorState error={error} onRetry={reload} />
+      ) : errors.length === 0 ? (
         <EmptyState
           icon={Bug}
           title="No errors found"
-          description={search ? `No errors match "${search}"` : 'No errors matching your filters.'}
+          description={filters.search ? `No errors match "${filters.search}".` : 'No errors match your filters.'}
         />
       ) : (
         <div className="space-y-2">
-          {filtered.map(error => (
-            <ErrorCard key={error.id} error={error} />
-          ))}
+          {errors.map((err) => <ErrorCard key={err.id} error={err} />)}
         </div>
       )}
     </div>

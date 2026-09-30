@@ -1,0 +1,19 @@
+{
+  "name": "@reposentinel/sdk",
+  "version": "0.1.0",
+  "description": "Error capture SDK for RepoSentinel (browser and Node.js)",
+  "type": "module",
+  "main": "./src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": false,
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  }
+}

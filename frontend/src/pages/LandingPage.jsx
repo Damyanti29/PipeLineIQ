@@ -1,9 +1,10 @@
 import { Link } from 'react-router-dom'
 import {
-  Zap, Code2, MessageSquare, Brain, GitBranch, Bug, Bell, Shield,
-  ArrowRight, CheckCircle, Terminal, AlertTriangle, TrendingUp,
-  ChevronRight, Star, ExternalLink
+  Code2, MessageSquare, Brain, Bug, Bell, Shield,
+  ArrowRight, Terminal, TrendingUp, ChevronRight, ShieldCheck,
 } from 'lucide-react'
+import { CodeBlock } from '@/components/ui/CodeBlock'
+import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
 
 const FEATURES = [
@@ -45,54 +46,44 @@ const FEATURES = [
   {
     icon: TrendingUp,
     title: 'Error Analytics',
-    description: 'Trend charts, occurrence heatmaps, and health dashboards for every repository in your stack.',
+    description: 'Trend charts and health overviews for every repository, plus GitHub pushes, PRs, workflow runs and deployments.',
     color: 'text-blue-400',
     bg: 'bg-blue-500/10',
   },
 ]
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Connect GitHub', desc: 'Install the PipelineIQ GitHub App and select repositories to monitor in one click.' },
-  { step: '02', title: 'Add the SDK', desc: 'Drop our 3-line JavaScript SDK into your app. It auto-captures exceptions and unhandled rejections.' },
+  { step: '01', title: 'Connect GitHub', desc: 'Install the RepoSentinel GitHub App and pick the repositories you want to monitor.' },
+  { step: '02', title: 'Add the SDK', desc: 'Add the JavaScript SDK with your project DSN. It captures exceptions and unhandled rejections automatically.' },
   { step: '03', title: 'AI Diagnoses', desc: 'Every error is fingerprinted, grouped, and analyzed by Gemini AI for root cause and fix suggestions.' },
   { step: '04', title: 'Slack Alert', desc: 'Critical errors trigger an instant Slack alert with full context, AI diagnosis, and action buttons.' },
 ]
 
-const TESTIMONIALS = [
-  {
-    name: 'Sarah K.',
-    role: 'Senior Engineer @ Stripe',
-    avatar: 'SK',
-    text: "PipelineIQ caught a null-pointer crash in production that had been silently failing for 3 days. The AI fix suggestion was spot-on. We deployed the fix in 12 minutes.",
-  },
-  {
-    name: 'Marcus T.',
-    role: 'CTO @ Finflow',
-    avatar: 'MT',
-    text: "We replaced Sentry + on-call runbooks with PipelineIQ. The Gemini AI diagnosis saves our team 40 minutes of debugging per incident. It's a force multiplier.",
-  },
-]
+const SDK_SNIPPET = `import RepoSentinel from '@reposentinel/sdk'
+
+RepoSentinel.init({
+  dsn: 'YOUR_PROJECT_DSN',
+  environment: 'production',
+})
+
+// Uncaught errors are captured automatically, or report one yourself:
+RepoSentinel.captureException(error)`
 
 export function LandingPage() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* Navbar */}
       <nav className="fixed top-0 inset-x-0 z-50 h-16 flex items-center justify-between px-6 md:px-12 border-b border-[var(--border)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
-        <Link to="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 to-brand-800 shadow-lg shadow-brand-900/30">
-            <Zap className="h-4 w-4 text-white" />
-          </div>
-          <span className="text-sm font-bold text-[var(--text-primary)]">PipelineIQ</span>
-        </Link>
+        <Link to="/"><Logo subtitle={null} /></Link>
         <div className="hidden md:flex items-center gap-6 text-sm text-[var(--text-secondary)]">
           <a href="#features" className="hover:text-[var(--text-primary)] transition-colors">Features</a>
           <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-colors">How it works</a>
-          <a href="#testimonials" className="hover:text-[var(--text-primary)] transition-colors">Testimonials</a>
+          <a href="#sdk" className="hover:text-[var(--text-primary)] transition-colors">SDK</a>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <Link to="/login" className="btn-ghost text-sm py-1.5">Sign in</Link>
-          <Link to="/login" className="btn-primary text-sm py-1.5">Get started free</Link>
+          <Link to="/login" className="btn-primary text-sm py-1.5">Get started</Link>
         </div>
       </nav>
 
@@ -117,12 +108,12 @@ export function LandingPage() {
           </h1>
 
           <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 animate-slide-up">
-            PipelineIQ monitors your GitHub repositories, captures application errors, runs AI-powered root-cause analysis, and fires Slack alerts — all in seconds.
+            RepoSentinel monitors your GitHub repositories, captures application errors, runs AI-powered root-cause analysis, and fires Slack alerts — all in seconds.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 animate-slide-up">
             <Link to="/login" className="btn-primary text-base px-6 py-3 glow-brand">
-              Start monitoring free
+              Start monitoring
               <ArrowRight className="h-4 w-4" />
             </Link>
             <a
@@ -141,7 +132,7 @@ export function LandingPage() {
               <span className="h-3 w-3 rounded-full bg-red-500/80" />
               <span className="h-3 w-3 rounded-full bg-amber-500/80" />
               <span className="h-3 w-3 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">pipelineiq.dev/dashboard</span>
+              <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">reposentinel/dashboard</span>
             </div>
             {/* Dashboard preview content */}
             <div className="p-6 text-left">
@@ -204,7 +195,7 @@ export function LandingPage() {
             <p className="label mb-3">How it works</p>
             <h2 className="text-4xl font-bold mb-4">Four steps from error to fix</h2>
             <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
-              PipelineIQ automates the entire incident response workflow so your team can focus on shipping, not debugging.
+              RepoSentinel automates the incident response workflow so your team can focus on shipping, not debugging.
             </p>
           </div>
           <div className="grid md:grid-cols-4 gap-6">
@@ -245,34 +236,17 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-24 px-6">
+      {/* SDK */}
+      <section id="sdk" className="py-24 px-6">
         <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="label mb-3">Testimonials</p>
-            <h2 className="text-4xl font-bold mb-4">Loved by engineering teams</h2>
+          <div className="text-center mb-12">
+            <p className="label mb-3">SDK</p>
+            <h2 className="text-4xl font-bold mb-4">A few lines to start capturing</h2>
+            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
+              Works in the browser and Node.js. Identical errors are fingerprinted and grouped, so 100 crashes become one incident and one Slack alert.
+            </p>
           </div>
-          <div className="grid md:grid-cols-2 gap-6">
-            {TESTIMONIALS.map(({ name, role, avatar, text }) => (
-              <div key={name} className="card p-6">
-                <div className="flex mb-3 gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                  ))}
-                </div>
-                <p className="text-sm text-[var(--text-secondary)] mb-5 leading-relaxed">"{text}"</p>
-                <div className="flex items-center gap-3">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-brand-600 text-white text-xs font-bold">
-                    {avatar}
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-[var(--text-primary)]">{name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">{role}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <CodeBlock code={SDK_SNIPPET} language="javascript" />
         </div>
       </section>
 
@@ -281,25 +255,16 @@ export function LandingPage() {
         <div className="max-w-2xl mx-auto text-center">
           <div className="card p-12 relative overflow-hidden">
             <div className="absolute inset-0 bg-gradient-to-br from-brand-600/5 to-violet-700/5 pointer-events-none" />
-            <Zap className="h-10 w-10 text-brand-400 mx-auto mb-4" />
+            <ShieldCheck className="h-10 w-10 text-brand-400 mx-auto mb-4" />
             <h2 className="text-3xl font-bold mb-3">Start monitoring in minutes</h2>
             <p className="text-[var(--text-secondary)] mb-8">
-              Free plan includes 3 repositories and 1,000 error events/month. No credit card required.
+              Connect GitHub, add the SDK and get your first AI diagnosis in a Slack alert.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link to="/login" className="btn-primary text-base px-6 py-3 justify-center glow-brand">
-                Create free account
+                Create an account
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <a
-                href="https://github.com"
-                className="btn-secondary text-base px-6 py-3 justify-center"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Code2 className="h-4 w-4" />
-                View on GitHub
-              </a>
             </div>
           </div>
         </div>
@@ -308,15 +273,12 @@ export function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-[var(--border)] py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <Zap className="h-4 w-4 text-brand-400" />
-            <span className="text-sm font-semibold text-[var(--text-primary)]">PipelineIQ</span>
-          </div>
-          <p className="text-xs text-[var(--text-muted)]">© 2026 PipelineIQ. Built with React, FastAPI, and Gemini AI.</p>
+          <Logo size="sm" subtitle={null} />
+          <p className="text-xs text-[var(--text-muted)]">© 2026 RepoSentinel. Built with React, Express, Supabase and Gemini.</p>
           <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
-            <a href="#" className="hover:text-[var(--text-primary)] transition-colors">Privacy</a>
-            <a href="#" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
-            <a href="#" className="hover:text-[var(--text-primary)] transition-colors">Docs</a>
+            <a href="#features" className="hover:text-[var(--text-primary)] transition-colors">Features</a>
+            <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-colors">How it works</a>
+            <a href="#sdk" className="hover:text-[var(--text-primary)] transition-colors">SDK</a>
           </div>
         </div>
       </footer>

@@ -1,5 +1,5 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import { DashboardLayout } from '@/components/layout/DashboardLayout'
+import { Routes, Route } from 'react-router-dom'
+import { DashboardLayout } from '@/layouts/DashboardLayout'
 
 import { LandingPage } from '@/pages/LandingPage'
 import { LoginPage } from '@/pages/LoginPage'
@@ -20,7 +20,7 @@ export default function App() {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
 
-      {/* Authenticated */}
+      {/* Authenticated (DashboardLayout redirects to /login without a session) */}
       <Route element={<DashboardLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/repositories" element={<RepositoriesPage />} />
@@ -32,7 +32,6 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
       </Route>
 
-      {/* Catch-all */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )

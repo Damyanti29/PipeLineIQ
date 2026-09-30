@@ -228,6 +228,10 @@ pre, code { font-family: 'JetBrains Mono', 'Fira Code', monospace; }
 }
 .btn-destructive:hover { background-color: rgba(239,68,68,0.2); }
 
+.btn-secondary:disabled,
+.btn-ghost:disabled,
+.btn-destructive:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Input */
 .input {
   width: 100%;

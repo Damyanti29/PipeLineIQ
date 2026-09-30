@@ -1,115 +1,146 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Zap, Eye, EyeOff, Code2, ArrowRight, AlertCircle } from 'lucide-react'
-import { useAuth } from '@/context/AuthContext'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
+import { Eye, EyeOff, Code2, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
+import { useAuth } from '@/hooks/useAuth'
+import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { Spinner } from '@/components/ui/LoadingState'
 
 export function LoginPage() {
-  const { login } = useAuth()
+  const { isAuthenticated, isConfigured, signIn, signUp, signInWithGitHub, resetPassword } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPass, setShowPass] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [info, setInfo] = useState('')
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email || !password) { setError('Please fill in all fields.'); return }
+  const destination = location.state?.from ?? '/dashboard'
+  if (isAuthenticated) return <Navigate to={destination} replace />
+
+  const run = async (action) => {
     setError('')
+    setInfo('')
     setLoading(true)
-    await new Promise(r => setTimeout(r, 800)) // simulate async
-    login({ email, password })
-    navigate('/dashboard')
+    try {
+      await action()
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleGitHub = async () => {
-    setLoading(true)
-    await new Promise(r => setTimeout(r, 600))
-    login({ provider: 'github' })
-    navigate('/dashboard')
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    run(async () => {
+      if (mode === 'signin') {
+        await signIn(email, password)
+        navigate(destination, { replace: true })
+      } else {
+        const { needsConfirmation } = await signUp(email, password, fullName.trim())
+        if (needsConfirmation) {
+          setInfo('Check your inbox to confirm your email, then sign in.')
+          setMode('signin')
+        } else {
+          navigate('/dashboard', { replace: true })
+        }
+      }
+    })
+  }
+
+  const handleForgotPassword = () => {
+    if (!email) {
+      setError('Enter your email first, then click "Forgot password?".')
+      return
+    }
+    run(async () => {
+      await resetPassword(email)
+      setInfo('If an account exists for that email, a reset link is on its way.')
+    })
+  }
+
+  const switchMode = () => {
+    setMode((m) => (m === 'signin' ? 'signup' : 'signin'))
+    setError('')
+    setInfo('')
   }
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
-      {/* Top bar */}
       <div className="flex items-center justify-between px-6 h-16 border-b border-[var(--border)]">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-brand-600 to-brand-800">
-            <Zap className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="text-sm font-bold text-[var(--text-primary)]">PipelineIQ</span>
-        </Link>
+        <Link to="/"><Logo size="sm" subtitle={null} /></Link>
         <ThemeToggle />
       </div>
 
-      {/* Form area */}
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-md animate-fade-in">
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
               {mode === 'signin' ? 'Welcome back' : 'Create your account'}
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              {mode === 'signin'
-                ? 'Sign in to your PipelineIQ account'
-                : 'Start monitoring your repos for free'}
+              {mode === 'signin' ? 'Sign in to your RepoSentinel account' : 'Start monitoring your repositories'}
             </p>
           </div>
 
           <div className="card p-8 space-y-5">
-            {/* GitHub OAuth */}
+            {!isConfigured && (
+              <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-sm text-amber-500">
+                <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+                <span>Supabase is not configured. Set <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> in <code>frontend/.env</code>.</span>
+              </div>
+            )}
+
             <button
-              onClick={handleGitHub}
-              disabled={loading}
+              onClick={() => run(signInWithGitHub)}
+              disabled={loading || !isConfigured}
               className="w-full flex items-center justify-center gap-2.5 rounded-lg border border-[var(--border)] bg-[var(--bg-tertiary)] px-4 py-2.5 text-sm font-medium text-[var(--text-primary)] hover:bg-[var(--border)] transition-all duration-200 active:scale-95 disabled:opacity-60"
-              id="github-oauth-btn"
             >
               <Code2 className="h-4 w-4" />
               Continue with GitHub
             </button>
 
-            {/* Divider */}
             <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-[var(--border)]" />
-              </div>
+              <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[var(--border)]" /></div>
               <div className="relative flex justify-center">
                 <span className="bg-[var(--bg-card)] px-3 text-xs text-[var(--text-muted)]">or continue with email</span>
               </div>
             </div>
 
-            {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-sm text-red-400">
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                {error}
+              <div className="flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-sm text-red-400" role="alert">
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />{error}
+              </div>
+            )}
+            {info && (
+              <div className="flex items-center gap-2 rounded-lg bg-green-500/10 border border-green-500/20 px-3 py-2.5 text-sm text-green-500" role="status">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />{info}
               </div>
             )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4" id="auth-form">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {mode === 'signup' && (
+                <div className="space-y-1.5">
+                  <label className="label" htmlFor="full-name">Name</label>
+                  <input id="full-name" type="text" className="input" placeholder="Ada Lovelace" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required />
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="label" htmlFor="email">Email</label>
-                <input
-                  id="email"
-                  type="email"
-                  className="input"
-                  placeholder="you@company.dev"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  autoComplete="email"
-                  required
-                />
+                <input id="email" type="email" className="input" placeholder="you@company.dev" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <label className="label" htmlFor="password">Password</label>
                   {mode === 'signin' && (
-                    <button type="button" className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
+                    <button type="button" onClick={handleForgotPassword} className="text-xs text-brand-400 hover:text-brand-300 transition-colors">
                       Forgot password?
                     </button>
                   )}
@@ -121,13 +152,14 @@ export function LoginPage() {
                     className="input pr-10"
                     placeholder="••••••••"
                     value={password}
-                    onChange={e => setPassword(e.target.value)}
+                    onChange={(e) => setPassword(e.target.value)}
                     autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                    minLength={mode === 'signup' ? 8 : undefined}
                     required
                   />
                   <button
                     type="button"
-                    onClick={() => setShowPass(p => !p)}
+                    onClick={() => setShowPass((p) => !p)}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                     aria-label={showPass ? 'Hide password' : 'Show password'}
                   >
@@ -136,42 +168,18 @@ export function LoginPage() {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary w-full justify-center py-2.5 text-sm"
-                id="auth-submit-btn"
-              >
-                {loading ? (
-                  <span className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                ) : (
-                  <>
-                    {mode === 'signin' ? 'Sign in' : 'Create account'}
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
+              <button type="submit" disabled={loading || !isConfigured} className="btn-primary w-full justify-center py-2.5 text-sm">
+                {loading ? <Spinner /> : <>{mode === 'signin' ? 'Sign in' : 'Create account'}<ArrowRight className="h-4 w-4" /></>}
               </button>
             </form>
 
-            {/* Toggle mode */}
             <p className="text-center text-sm text-[var(--text-muted)]">
               {mode === 'signin' ? "Don't have an account? " : 'Already have an account? '}
-              <button
-                onClick={() => { setMode(m => m === 'signin' ? 'signup' : 'signin'); setError('') }}
-                className="text-brand-400 hover:text-brand-300 font-medium transition-colors"
-                id="toggle-auth-mode"
-              >
-                {mode === 'signin' ? 'Sign up for free' : 'Sign in'}
+              <button onClick={switchMode} className="text-brand-400 hover:text-brand-300 font-medium transition-colors">
+                {mode === 'signin' ? 'Sign up' : 'Sign in'}
               </button>
             </p>
           </div>
-
-          <p className="text-center text-xs text-[var(--text-muted)] mt-5">
-            By continuing, you agree to our{' '}
-            <a href="#" className="hover:text-[var(--text-primary)] transition-colors">Terms</a>
-            {' '}and{' '}
-            <a href="#" className="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</a>.
-          </p>
         </div>
       </div>
     </div>

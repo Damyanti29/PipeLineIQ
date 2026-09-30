@@ -1,7 +1,7 @@
 {
-  "name": "frontend",
+  "name": "reposentinel-frontend",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -10,16 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@radix-ui/react-dialog": "^1.1.23",
-    "@radix-ui/react-dropdown-menu": "^2.1.24",
-    "@radix-ui/react-select": "^2.3.7",
-    "@radix-ui/react-switch": "^1.3.7",
-    "@radix-ui/react-tabs": "^1.1.21",
-    "@radix-ui/react-tooltip": "^1.2.16",
-    "@rolldown/binding-win32-x64-msvc": "^1.2.7",
-    "@tailwindcss/postcss": "^4.3.3",
+    "@supabase/supabase-js": "^2.117.2",
     "axios": "^1.20.0",
-    "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.41.0",
     "react": "^19.2.8",
@@ -29,10 +21,8 @@
     "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.4",
+    "@tailwindcss/postcss": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.0",
-    "autoprefixer": "^10.5.4",
     "oxlint": "^1.79.0",
     "postcss": "^8.5.26",
     "tailwindcss": "^4.3.3",

@@ -1,177 +1,207 @@
-import { useParams, Link } from 'react-router-dom'
-import { ArrowLeft, GitBranch, Star, Eye, EyeOff, GitCommit, CheckCircle, XCircle, Loader } from 'lucide-react'
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
-} from 'recharts'
-import { ErrorCard } from '@/components/ui/ErrorCard'
-import { mockRepositories, mockErrors, mockDeployments, mockRepoErrorTrend } from '@/data/mockData'
-import { timeAgo, formatDate } from '@/lib/utils'
-import { cn } from '@/lib/utils'
 import { useState } from 'react'
+import { useParams, Link } from 'react-router-dom'
+import { ArrowLeft, GitBranch, Eye, EyeOff, GitCommit, ExternalLink, KeyRound } from 'lucide-react'
+import { ErrorCard } from '@/components/ui/ErrorCard'
+import { ErrorTrendChart } from '@/components/ui/ErrorTrendChart'
+import { CodeBlock } from '@/components/ui/CodeBlock'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { StatusBadge } from '@/components/ui/StatusBadge'
+import { useApi } from '@/hooks/useApi'
+import { API_URL } from '@/lib/api'
+import { cn } from '@/lib/utils'
+import { timeAgo } from '@/utils/format'
+import { getRepository, listRepositoryEvents, setMonitoring } from '@/services/repositoryService'
+import { getErrorStats, listErrors } from '@/services/errorService'
 
-function CustomTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null
-  return (
-    <div className="card px-3 py-2 text-xs shadow-xl">
-      <p className="font-medium text-[var(--text-primary)] mb-1">{label}</p>
-      {payload.map(p => (
-        <div key={p.dataKey} className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full" style={{ backgroundColor: p.color }} />
-          <span className="text-[var(--text-muted)] capitalize">{p.dataKey}:</span>
-          <span className="font-medium text-[var(--text-primary)]">{p.value}</span>
-        </div>
-      ))}
-    </div>
-  )
+const EVENT_LABELS = {
+  push: 'Push',
+  pull_request: 'Pull request',
+  workflow_run: 'Workflow',
+  deployment: 'Deployment',
+  deployment_status: 'Deployment',
+  issues: 'Issue',
 }
 
-const DEPLOY_ICONS = {
-  success: { icon: CheckCircle, color: 'text-green-500' },
-  failed: { icon: XCircle, color: 'text-red-500' },
-  running: { icon: Loader, color: 'text-blue-400 animate-spin' },
+// DSN format expected by @reposentinel/sdk: <protocol>://<ingestKey>@<host>/<repositoryId>
+function buildDsn(repository) {
+  const url = new URL(API_URL)
+  return `${url.protocol}//${repository.ingest_key}@${url.host}${url.pathname.replace(/\/$/, '')}/${repository.id}`
+}
+
+async function loadRepository(id) {
+  const [repository, stats, errors, events] = await Promise.all([
+    getRepository(id),
+    getErrorStats({ repositoryId: id, days: 14 }),
+    listErrors({ repositoryId: id, limit: 10 }),
+    listRepositoryEvents(id),
+  ])
+  return { repository, stats, errors, events }
 }
 
 export function RepositoryDetailPage() {
   const { id } = useParams()
-  const repo = mockRepositories.find(r => r.id === id) ?? mockRepositories[0]
-  const repoErrors = mockErrors.filter(e => e.repositoryId === repo.id)
-  const repoDeployments = mockDeployments.filter(d => d.repositoryId === repo.id)
-  const [monitoring, setMonitoring] = useState(repo.monitoringEnabled)
+  const { data, loading, error, reload, setData } = useApi(() => loadRepository(id), [id])
+  const [toggling, setToggling] = useState(false)
+  const [toggleError, setToggleError] = useState(null)
 
-  const HEALTH_COLORS = {
-    critical: 'text-red-500 bg-red-500/10 border-red-500/20',
-    warning: 'text-orange-500 bg-orange-500/10 border-orange-500/20',
-    healthy: 'text-green-500 bg-green-500/10 border-green-500/20',
-    unknown: 'text-[var(--text-muted)] bg-[var(--bg-tertiary)] border-[var(--border)]',
+  const back = (
+    <Link to="/repositories" className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors w-fit">
+      <ArrowLeft className="h-4 w-4" />
+      Back to repositories
+    </Link>
+  )
+
+  if (loading) return <div className="space-y-6 max-w-5xl">{back}<LoadingState /></div>
+  if (error) {
+    return (
+      <div className="space-y-6 max-w-5xl">
+        {back}
+        <ErrorState error={error} onRetry={error.status === 404 ? undefined : reload} title={error.status === 404 ? 'Repository not found' : undefined} />
+      </div>
+    )
   }
+
+  const { repository, stats, errors, events } = data
+
+  const toggleMonitoring = async () => {
+    setToggling(true)
+    setToggleError(null)
+    try {
+      const updated = await setMonitoring(repository.id, !repository.monitoring_enabled)
+      setData((prev) => ({ ...prev, repository: { ...prev.repository, ...updated } }))
+    } catch (err) {
+      setToggleError(err)
+    } finally {
+      setToggling(false)
+    }
+  }
+
+  const dsn = buildDsn(repository)
+  const snippet = `import RepoSentinel from '@reposentinel/sdk'
+
+RepoSentinel.init({
+  dsn: '${dsn}',
+  environment: 'production',
+})`
 
   return (
     <div className="space-y-6 max-w-5xl">
-      {/* Back */}
-      <Link to="/repositories" className="flex items-center gap-2 text-sm text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors w-fit">
-        <ArrowLeft className="h-4 w-4" />
-        Back to repositories
-      </Link>
+      {back}
 
-      {/* Repo header */}
       <div className="card p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-3 flex-wrap">
-              <h2 className="text-xl font-bold text-[var(--text-primary)]">{repo.fullName}</h2>
-              <span className={cn('badge border', HEALTH_COLORS[repo.health])}>
-                {repo.health}
-              </span>
+              <h2 className="text-xl font-bold text-[var(--text-primary)] break-all">{repository.full_name}</h2>
+              <a href={repository.html_url} target="_blank" rel="noopener noreferrer" className="text-[var(--text-muted)] hover:text-[var(--text-primary)]" aria-label="Open on GitHub">
+                <ExternalLink className="h-4 w-4" />
+              </a>
             </div>
-            {repo.description && (
-              <p className="text-sm text-[var(--text-secondary)] mt-1">{repo.description}</p>
+            <div className="flex items-center gap-4 mt-3 text-sm text-[var(--text-muted)] flex-wrap">
+              <span className="flex items-center gap-1.5"><GitBranch className="h-3.5 w-3.5" />{repository.default_branch}</span>
+              <span>Added {timeAgo(repository.created_at)}</span>
+              {stats.total_errors > 0 && <span>Last error {timeAgo(repository.stats.last_error_at)}</span>}
+            </div>
+          </div>
+          <button
+            onClick={toggleMonitoring}
+            disabled={toggling}
+            className={cn(
+              'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-200 disabled:opacity-50',
+              repository.monitoring_enabled
+                ? 'border-green-500/30 bg-green-500/10 text-green-500 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
+                : 'border-brand-500/30 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20',
             )}
-            <div className="flex items-center gap-4 mt-3 text-sm text-[var(--text-muted)]">
-              <span className="flex items-center gap-1.5">
-                <GitBranch className="h-3.5 w-3.5" />{repo.branch}
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Star className="h-3.5 w-3.5" />{repo.stars}
-              </span>
-              <span>{repo.language}</span>
-              <span>Updated {timeAgo(repo.updatedAt)}</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setMonitoring(p => !p)}
-              className={cn(
-                'flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all duration-200',
-                monitoring
-                  ? 'border-green-500/30 bg-green-500/10 text-green-500 hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30'
-                  : 'border-brand-500/30 bg-brand-500/10 text-brand-400 hover:bg-brand-500/20'
-              )}
-            >
-              {monitoring ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
-              {monitoring ? 'Monitoring active' : 'Enable monitoring'}
-            </button>
-          </div>
+          >
+            {repository.monitoring_enabled ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            {repository.monitoring_enabled ? 'Monitoring active' : 'Enable monitoring'}
+          </button>
         </div>
+        {toggleError && <div className="mt-4"><ErrorState error={toggleError} title="Could not update monitoring" /></div>}
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-[var(--border)]">
-          <div>
-            <p className="text-2xl font-bold text-[var(--text-primary)]">{repo.errorCount}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Total errors</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-red-500">{repo.criticalCount}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Critical errors</p>
-          </div>
-          <div>
-            <p className="text-2xl font-bold text-[var(--text-primary)]">{repoDeployments.length}</p>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">Deployments</p>
-          </div>
+          <Stat value={stats.open_errors} label="Open errors" />
+          <Stat value={stats.critical_errors} label="Critical" className="text-red-500" />
+          <Stat value={stats.open_incidents} label="Open incidents" />
         </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-5">
-        {/* Error Trend */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Error Trend</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <AreaChart data={mockRepoErrorTrend} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="repoErrors" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.2} />
-                  <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'var(--text-muted)' }} tickLine={false} axisLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="errors" stroke="#7c3aed" strokeWidth={2} fill="url(#repoErrors)" dot={false} />
-            </AreaChart>
-          </ResponsiveContainer>
+          <h3 className="section-title mb-4">Error events (14 days)</h3>
+          <ErrorTrendChart data={stats.trend} height={180} />
         </div>
 
-        {/* Recent Deployments */}
         <div className="card p-5">
-          <h3 className="section-title mb-4">Recent Deployments</h3>
-          <div className="space-y-3">
-            {repoDeployments.length === 0 ? (
-              <p className="text-sm text-[var(--text-muted)]">No deployments found.</p>
-            ) : repoDeployments.map(dep => {
-              const { icon: Icon, color } = DEPLOY_ICONS[dep.status] ?? DEPLOY_ICONS.running
-              return (
-                <div key={dep.id} className="flex items-start gap-3 py-2 border-b border-[var(--border)] last:border-0">
-                  <Icon className={cn('h-4 w-4 mt-0.5 flex-shrink-0', color)} />
+          <h3 className="section-title mb-4">Recent GitHub activity</h3>
+          {events.length === 0 ? (
+            <p className="text-sm text-[var(--text-muted)]">
+              No webhook events yet. Pushes, pull requests, workflow runs and deployments appear here.
+            </p>
+          ) : (
+            <div className="space-y-1 max-h-64 overflow-y-auto">
+              {events.map((event) => (
+                <div key={event.id} className="flex items-start gap-3 py-2 border-b border-[var(--border)] last:border-0">
+                  <GitCommit className="h-4 w-4 mt-0.5 flex-shrink-0 text-[var(--text-muted)]" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm text-[var(--text-primary)] truncate">{dep.commitMessage}</p>
-                    <div className="flex items-center gap-3 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-[var(--text-muted)] font-mono">
-                        <GitCommit className="h-3 w-3" />{dep.commitSha}
-                      </span>
-                      <span className="text-xs text-[var(--text-muted)]">{dep.duration}</span>
-                      <span className="text-xs text-[var(--text-muted)]">{timeAgo(dep.createdAt)}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-medium text-brand-400">{EVENT_LABELS[event.event_type] ?? event.event_type}</span>
+                      {event.url ? (
+                        <a href={event.url} target="_blank" rel="noopener noreferrer" className="text-sm text-[var(--text-primary)] truncate hover:text-brand-400">
+                          {event.title}
+                        </a>
+                      ) : (
+                        <span className="text-sm text-[var(--text-primary)] truncate">{event.title}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-[var(--text-muted)]">
+                      {event.status && <StatusBadge status={event.status} className="text-[10px]" />}
+                      {event.sha && <span className="font-mono">{event.sha.slice(0, 7)}</span>}
+                      {event.actor && <span>@{event.actor}</span>}
+                      <span>{timeAgo(event.created_at)}</span>
                     </div>
                   </div>
                 </div>
-              )
-            })}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Recent Errors */}
+      <div className="card p-5 space-y-4">
+        <div className="flex items-center gap-2">
+          <KeyRound className="h-4 w-4 text-brand-400" />
+          <h3 className="section-title">SDK setup</h3>
+        </div>
+        <p className="text-sm text-[var(--text-secondary)]">
+          Add the SDK to your app with this DSN. It contains this repository's ingest key, which can only submit errors.
+        </p>
+        <CodeBlock code={snippet} language="javascript" />
+      </div>
+
       <div className="card p-5">
-        <h3 className="section-title mb-4">Recent Errors</h3>
-        {repoErrors.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)]">No errors detected. 🎉</p>
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="section-title">Recent errors</h3>
+          <Link to={`/errors?repositoryId=${repository.id}`} className="text-xs text-brand-400 hover:text-brand-300">View all</Link>
+        </div>
+        {errors.length === 0 ? (
+          <p className="text-sm text-[var(--text-muted)]">No errors captured yet. 🎉</p>
         ) : (
           <div className="space-y-2">
-            {repoErrors.map(error => (
-              <ErrorCard key={error.id} error={error} />
-            ))}
+            {errors.map((err) => <ErrorCard key={err.id} error={err} showRepository={false} />)}
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+function Stat({ value, label, className }) {
+  return (
+    <div>
+      <p className={cn('text-2xl font-bold text-[var(--text-primary)]', className)}>{value}</p>
+      <p className="text-xs text-[var(--text-muted)] mt-0.5">{label}</p>
     </div>
   )
 }

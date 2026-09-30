@@ -1,0 +1,23 @@
+// Deterministic, credential-free environment for every test file.
+// Values are set explicitly (even empty ones) so a developer's local .env is never used.
+Object.assign(process.env, {
+  NODE_ENV: 'test',
+  FRONTEND_URL: 'http://localhost:5173',
+  SUPABASE_URL: 'http://supabase.test',
+  SUPABASE_ANON_KEY: 'test-anon-key',
+  SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
+  GITHUB_APP_ID: '',
+  GITHUB_APP_PRIVATE_KEY: '',
+  GITHUB_CLIENT_ID: '',
+  GITHUB_CLIENT_SECRET: '',
+  GITHUB_WEBHOOK_SECRET: 'test-webhook-secret',
+  GITHUB_REDIRECT_URI: '',
+  SLACK_CLIENT_ID: '',
+  SLACK_CLIENT_SECRET: '',
+  SLACK_SIGNING_SECRET: 'test-slack-signing-secret',
+  SLACK_REDIRECT_URI: '',
+  GEMINI_API_KEY: '',
+  GEMINI_MODEL: '',
+  REDIS_URL: 'redis://localhost:6379',
+  APP_ENCRYPTION_KEY: 'test-encryption-key-0123456789abcdef0123456789',
+})

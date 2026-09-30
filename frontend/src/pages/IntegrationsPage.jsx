@@ -1,82 +1,111 @@
-import { useState } from 'react'
-import { Plug, Clock } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { CheckCircle, AlertCircle } from 'lucide-react'
 import { IntegrationCard } from '@/components/ui/IntegrationCard'
-import { mockIntegrations } from '@/data/mockData'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { LoadingState } from '@/components/ui/LoadingState'
+import { useApi } from '@/hooks/useApi'
+import { formatDate } from '@/utils/format'
+import { connectGithub, getGithubStatus } from '@/services/githubService'
+import { connectSlack, disconnectSlack, getSlackStatus, sendSlackTest } from '@/services/slackService'
 
-const COMING_SOON = [
-  { name: 'PagerDuty', description: 'On-call alerting and escalation policies.' },
-  { name: 'Datadog', description: 'APM and infrastructure monitoring integration.' },
-  { name: 'Linear', description: 'Auto-create Linear issues from incidents.' },
-  { name: 'Jira', description: 'Sync incidents with your Jira project board.' },
-]
+// Messages for the ?github= / ?slack= flags set by the backend OAuth callbacks.
+const CALLBACK_MESSAGES = {
+  connected: { ok: true, text: (name) => `${name} connected successfully.` },
+  error: { ok: false, text: (name) => `${name} connection failed. Please try again.` },
+  cancelled: { ok: false, text: (name) => `${name} connection was cancelled.` },
+}
+
+async function loadStatus() {
+  const [github, slack] = await Promise.all([getGithubStatus(), getSlackStatus()])
+  return { github, slack }
+}
 
 export function IntegrationsPage() {
-  const [integrations, setIntegrations] = useState(mockIntegrations)
+  const { data, loading, error, reload } = useApi(loadStatus)
+  const [params, setParams] = useSearchParams()
+  const [notice, setNotice] = useState(null)
+  const [busy, setBusy] = useState(null)
 
-  const handleConnect = (type) => {
-    alert(`OAuth flow for ${type} would open here. (Phase 2)`)
-  }
+  useEffect(() => {
+    const github = params.get('github')
+    const slack = params.get('slack')
+    const flag = github ? ['GitHub', github] : slack ? ['Slack', slack] : null
+    if (flag && CALLBACK_MESSAGES[flag[1]]) {
+      const message = CALLBACK_MESSAGES[flag[1]]
+      setNotice({ ok: message.ok, text: message.text(flag[0]) })
+      setParams({}, { replace: true })
+    }
+  }, [params, setParams])
 
-  const handleDisconnect = (type) => {
-    if (confirm(`Disconnect ${type}?`)) {
-      setIntegrations(prev => ({
-        ...prev,
-        [type]: { ...prev[type], connected: false },
-      }))
+  const run = async (key, action, successText) => {
+    setBusy(key)
+    setNotice(null)
+    try {
+      await action()
+      if (successText) setNotice({ ok: true, text: successText })
+    } catch (err) {
+      setNotice({ ok: false, text: err.message })
+    } finally {
+      setBusy(null)
     }
   }
 
-  const handleTest = () => {
-    alert('Test Slack alert sent! Check #alerts-production.')
+  const handleSlackDisconnect = () => {
+    if (!window.confirm('Disconnect Slack? Alerts will stop being posted.')) return
+    run('slack', async () => {
+      await disconnectSlack()
+      reload()
+    }, 'Slack disconnected.')
   }
 
   return (
     <div className="space-y-8 max-w-4xl">
       <div>
         <h2 className="text-xl font-bold text-[var(--text-primary)]">Integrations</h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-0.5">
-          Connect your tools to enable monitoring, alerts, and issue management.
-        </p>
+        <p className="text-sm text-[var(--text-secondary)] mt-0.5">Connect GitHub to choose repositories, and Slack to receive alerts.</p>
       </div>
 
-      {/* Active integrations */}
-      <div>
-        <h3 className="section-title mb-4">Connected services</h3>
+      {notice && (
+        <div className={`flex items-center gap-2 rounded-lg border px-4 py-3 text-sm ${notice.ok ? 'border-green-500/20 bg-green-500/5 text-green-500' : 'border-red-500/20 bg-red-500/5 text-red-400'}`}>
+          {notice.ok ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+          {notice.text}
+        </div>
+      )}
+
+      {loading ? (
+        <LoadingState />
+      ) : error ? (
+        <ErrorState error={error} onRetry={reload} />
+      ) : (
         <div className="grid sm:grid-cols-2 gap-5">
           <IntegrationCard
             type="github"
-            integration={integrations.github}
-            onConnect={() => handleConnect('github')}
-            onDisconnect={() => handleDisconnect('github')}
+            connected={data.github.connected}
+            configured={data.github.configured}
+            busy={busy === 'github'}
+            details={data.github.installations.map((inst) => ({
+              label: `${inst.account_type} · since ${formatDate(inst.created_at)}`,
+              value: `@${inst.account_login}`,
+            }))}
+            onConnect={() => run('github', connectGithub)}
           />
           <IntegrationCard
             type="slack"
-            integration={integrations.slack}
-            onConnect={() => handleConnect('slack')}
-            onDisconnect={() => handleDisconnect('slack')}
-            onTest={handleTest}
+            connected={data.slack.connected}
+            configured={data.slack.configured}
+            busy={busy === 'slack'}
+            details={[
+              { label: 'Workspace', value: data.slack.workspace_name },
+              { label: 'Channel', value: data.slack.channel_name ?? '—' },
+              { label: 'Connected', value: formatDate(data.slack.connected_at) },
+            ]}
+            onConnect={() => run('slack', connectSlack)}
+            onDisconnect={handleSlackDisconnect}
+            onTest={() => run('slack', sendSlackTest, `Test alert sent to ${data.slack.channel_name ?? 'Slack'}.`)}
           />
         </div>
-      </div>
-
-      {/* Coming soon */}
-      <div>
-        <h3 className="section-title mb-4">Coming soon</h3>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {COMING_SOON.map(item => (
-            <div key={item.name} className="card p-4 opacity-60 select-none">
-              <div className="flex items-center gap-2 mb-2">
-                <Plug className="h-4 w-4 text-[var(--text-muted)]" />
-                <span className="text-sm font-medium text-[var(--text-primary)]">{item.name}</span>
-                <span className="badge badge-default text-[10px] ml-auto">
-                  <Clock className="h-2.5 w-2.5" />Soon
-                </span>
-              </div>
-              <p className="text-xs text-[var(--text-muted)]">{item.description}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   )
 }

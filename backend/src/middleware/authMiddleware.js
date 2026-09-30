@@ -3,7 +3,7 @@ import { supabaseAdmin } from '../supabase/adminClient.js'
 import { safeEqual } from '../utils/crypto.js'
 import { forbidden, notConfigured, unauthorized } from '../utils/httpError.js'
 
-export const INGEST_KEY_HEADER = 'x-reposentinel-key'
+export const INGEST_KEY_HEADER = 'x-pipelineiq-key'
 
 function extractBearerToken(req) {
   const header = req.get('authorization') ?? ''

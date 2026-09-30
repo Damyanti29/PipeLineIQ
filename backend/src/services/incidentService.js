@@ -116,7 +116,7 @@ export function buildIssueBody(incident, error, repository) {
     '### Suggested fix',
     ai ? ai.suggestedFix : '_No suggestion available._',
     '',
-    `---\n_Created by [RepoSentinel](${env.frontendUrl}/errors/${error.id})_`,
+    `---\n_Created by [PipelineIQ](${env.frontendUrl}/errors/${error.id})_`,
   ].join('\n')
 }
 
@@ -148,9 +148,9 @@ export async function createGithubIssue(incidentId, userId) {
 
   try {
     const issue = await githubService.createIssue(incident.repository.installation_id, incident.repository.full_name, {
-      title: `[RepoSentinel] ${incident.title}`,
+      title: `[PipelineIQ] ${incident.title}`,
       body: buildIssueBody(incident, incident.error, incident.repository),
-      labels: ['bug', 'reposentinel'],
+      labels: ['bug', 'pipelineiq'],
     })
     const updated = unwrap(
       await admin

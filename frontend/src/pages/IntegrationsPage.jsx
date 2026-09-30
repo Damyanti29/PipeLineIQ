@@ -4,6 +4,7 @@ import { CheckCircle, AlertCircle } from 'lucide-react'
 import { IntegrationCard } from '@/components/ui/IntegrationCard'
 import { ErrorState } from '@/components/ui/ErrorState'
 import { LoadingState } from '@/components/ui/LoadingState'
+import { SystemStatus } from '@/components/ui/SystemStatus'
 import { useApi } from '@/hooks/useApi'
 import { formatDate } from '@/utils/format'
 import { connectGithub, getGithubStatus } from '@/services/githubService'
@@ -21,22 +22,23 @@ async function loadStatus() {
   return { github, slack }
 }
 
+function noticeFromParams(params) {
+  const flag = params.get('github') ? ['GitHub', params.get('github')] : params.get('slack') ? ['Slack', params.get('slack')] : null
+  const message = flag && CALLBACK_MESSAGES[flag[1]]
+  return message ? { ok: message.ok, text: message.text(flag[0]) } : null
+}
+
 export function IntegrationsPage() {
   const { data, loading, error, reload } = useApi(loadStatus)
   const [params, setParams] = useSearchParams()
-  const [notice, setNotice] = useState(null)
+  const [notice, setNotice] = useState(() => noticeFromParams(params))
   const [busy, setBusy] = useState(null)
 
+  // Drop the one-time callback flag from the URL once it has been shown.
+  const hasFlag = params.has('github') || params.has('slack')
   useEffect(() => {
-    const github = params.get('github')
-    const slack = params.get('slack')
-    const flag = github ? ['GitHub', github] : slack ? ['Slack', slack] : null
-    if (flag && CALLBACK_MESSAGES[flag[1]]) {
-      const message = CALLBACK_MESSAGES[flag[1]]
-      setNotice({ ok: message.ok, text: message.text(flag[0]) })
-      setParams({}, { replace: true })
-    }
-  }, [params, setParams])
+    if (hasFlag) setParams({}, { replace: true })
+  }, [hasFlag, setParams])
 
   const run = async (key, action, successText) => {
     setBusy(key)
@@ -72,6 +74,8 @@ export function IntegrationsPage() {
           {notice.text}
         </div>
       )}
+
+      <SystemStatus />
 
       {loading ? (
         <LoadingState />

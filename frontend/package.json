@@ -1,5 +1,5 @@
 {
-  "name": "reposentinel-frontend",
+  "name": "pipelineiq-frontend",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "demo": "node demo/start.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

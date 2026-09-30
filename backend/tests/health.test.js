@@ -72,6 +72,6 @@ describe('CORS', () => {
       .set('Origin', 'https://customer-app.example')
       .set('Access-Control-Request-Method', 'POST')
     expect(res.headers['access-control-allow-origin']).toBe('https://customer-app.example')
-    expect(res.headers['access-control-allow-headers']).toContain('x-reposentinel-key')
+    expect(res.headers['access-control-allow-headers']).toContain('x-pipelineiq-key')
   })
 })

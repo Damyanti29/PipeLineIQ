@@ -58,7 +58,15 @@ export function ErrorDetailPage() {
   const changeStatus = (status) =>
     run(status, async () => {
       const updated = await updateErrorStatus(error.id, status)
-      setData((prev) => ({ ...prev, status: updated.status }))
+      // The backend also closes the active incident when an error is resolved or ignored.
+      setData((prev) => ({
+        ...prev,
+        status: updated.status,
+        incidents:
+          status === 'open'
+            ? prev.incidents
+            : prev.incidents.map((i) => (['open', 'investigating'].includes(i.status) ? { ...i, status } : i)),
+      }))
     })
 
   const createIssue = () =>

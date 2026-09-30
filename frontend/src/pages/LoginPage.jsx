@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, Code2, ArrowRight, AlertCircle, CheckCircle } from 'lucide-react'
+import { Eye, EyeOff, Code2, ArrowRight, AlertCircle, CheckCircle, Brain, Fingerprint, BellRing } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { Logo } from '@/components/ui/Logo'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
@@ -71,9 +71,11 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
-      <div className="flex items-center justify-between px-6 h-16 border-b border-[var(--border)]">
-        <Link to="/"><Logo size="sm" subtitle={null} /></Link>
+    <div className="min-h-screen bg-[var(--bg-primary)] flex">
+      <BrandPanel />
+      <div className="relative flex flex-1 flex-col">
+      <div className="flex items-center justify-between px-6 h-16">
+        <Link to="/" className="lg:invisible"><Logo size="sm" subtitle={null} /></Link>
         <ThemeToggle />
       </div>
 
@@ -84,11 +86,16 @@ export function LoginPage() {
               {mode === 'signin' ? 'Welcome back' : 'Create your account'}
             </h1>
             <p className="text-sm text-[var(--text-secondary)]">
-              {mode === 'signin' ? 'Sign in to your RepoSentinel account' : 'Start monitoring your repositories'}
+              {mode === 'signin' ? 'Sign in to your PipelineIQ account' : 'Start monitoring your repositories'}
             </p>
           </div>
 
-          <div className="card p-8 space-y-5">
+          <div className="card gradient-border p-8 space-y-5">
+            {import.meta.env.VITE_DEMO_MODE === 'true' && (
+              <div className="rounded-lg bg-brand-500/10 border border-brand-500/20 px-3 py-2.5 text-sm text-brand-300">
+                Demo mode: sign in with any email and password.
+              </div>
+            )}
             {!isConfigured && (
               <div className="flex items-start gap-2 rounded-lg bg-amber-500/10 border border-amber-500/20 px-3 py-2.5 text-sm text-amber-500">
                 <AlertCircle className="h-4 w-4 flex-shrink-0 mt-0.5" />
@@ -182,6 +189,46 @@ export function LoginPage() {
           </div>
         </div>
       </div>
+      </div>
+    </div>
+  )
+}
+
+const HIGHLIGHTS = [
+  { icon: Fingerprint, title: 'Duplicates grouped automatically', text: 'One error group per bug, however many times it fires.' },
+  { icon: Brain, title: 'AI root-cause analysis', text: 'Gemini explains the failure and suggests a fix.' },
+  { icon: BellRing, title: 'One Slack alert per problem', text: 'With the diagnosis and a one-click GitHub issue.' },
+]
+
+function BrandPanel() {
+  return (
+    <div className="relative hidden lg:flex w-[46%] flex-col justify-between overflow-hidden border-r border-[var(--border)] bg-[var(--bg-secondary)] p-12">
+      <div className="aurora -top-20 -left-20 h-96 w-96 bg-violet-600/35" />
+      <div className="aurora bottom-0 right-0 h-80 w-80 bg-cyan-500/20" style={{ animationDelay: '-6s' }} />
+      <div className="absolute inset-0 hero-grid" />
+      <Link to="/" className="relative"><Logo subtitle={null} /></Link>
+      <div className="relative">
+        <h2 className="text-4xl font-black tracking-tight leading-tight text-[var(--text-primary)]">
+          Know what broke,<br /><span className="gradient-text">and why.</span>
+        </h2>
+        <p className="mt-4 max-w-sm text-[var(--text-secondary)]">
+          AI-powered error and incident monitoring for your GitHub repositories.
+        </p>
+        <div className="mt-10 space-y-5">
+          {HIGHLIGHTS.map(({ icon: Icon, title, text }) => (
+            <div key={title} className="flex items-start gap-3">
+              <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 shadow-[0_0_20px_-4px_rgba(139,92,246,0.8)]">
+                <Icon className="h-4 w-4 text-white" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">{title}</p>
+                <p className="text-sm text-[var(--text-muted)]">{text}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <p className="relative text-xs text-[var(--text-muted)]">© 2026 PipelineIQ</p>
     </div>
   )
 }

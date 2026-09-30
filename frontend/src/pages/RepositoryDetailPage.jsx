@@ -23,7 +23,7 @@ const EVENT_LABELS = {
   issues: 'Issue',
 }
 
-// DSN format expected by @reposentinel/sdk: <protocol>://<ingestKey>@<host>/<repositoryId>
+// DSN format expected by @pipelineiq/sdk: <protocol>://<ingestKey>@<host>/<repositoryId>
 function buildDsn(repository) {
   const url = new URL(API_URL)
   return `${url.protocol}//${repository.ingest_key}@${url.host}${url.pathname.replace(/\/$/, '')}/${repository.id}`
@@ -78,9 +78,9 @@ export function RepositoryDetailPage() {
   }
 
   const dsn = buildDsn(repository)
-  const snippet = `import RepoSentinel from '@reposentinel/sdk'
+  const snippet = `import PipelineIQ from '@pipelineiq/sdk'
 
-RepoSentinel.init({
+PipelineIQ.init({
   dsn: '${dsn}',
   environment: 'production',
 })`

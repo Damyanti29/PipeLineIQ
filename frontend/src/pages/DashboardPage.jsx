@@ -4,6 +4,7 @@ import {
   MessageSquare, CheckCircle, ArrowRight, ExternalLink, Code2,
 } from 'lucide-react'
 import { StatCard } from '@/components/ui/StatCard'
+import { SystemStatus } from '@/components/ui/SystemStatus'
 import { IncidentCard } from '@/components/ui/IncidentCard'
 import { ErrorTrendChart } from '@/components/ui/ErrorTrendChart'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -22,7 +23,7 @@ import { cn } from '@/lib/utils'
 const HEALTH_DOT = {
   critical: 'bg-red-500 animate-pulse',
   warning: 'bg-orange-500',
-  healthy: 'bg-green-500',
+  healthy: 'bg-emerald-400',
   paused: 'bg-[var(--text-muted)]',
 }
 
@@ -44,39 +45,101 @@ async function loadDashboard() {
   return { stats, incidents, repositories, github, slack }
 }
 
+// Share of monitored repositories with no open critical errors.
+function healthScore(repositories) {
+  const monitored = repositories.filter((r) => r.monitoring_enabled)
+  if (!monitored.length) return null
+  const healthy = monitored.filter((r) => repositoryHealth(r) !== 'critical').length
+  return Math.round((healthy / monitored.length) * 100)
+}
+
+function summarize(stats) {
+  if (stats.critical_errors > 0) {
+    return `${stats.critical_errors} critical error${stats.critical_errors > 1 ? 's need' : ' needs'} attention.`
+  }
+  if (stats.open_errors > 0) {
+    return `${stats.open_errors} open error group${stats.open_errors > 1 ? 's' : ''}, nothing critical.`
+  }
+  return 'All clear. No open errors right now.'
+}
+
+function HealthRing({ score }) {
+  const radius = 34
+  const circumference = 2 * Math.PI * radius
+  const value = score ?? 0
+  const color = score === null ? '#64748b' : value >= 90 ? '#34d399' : value >= 60 ? '#fbbf24' : '#f87171'
+  return (
+    <div className="relative h-24 w-24 flex-shrink-0" title="Monitored repositories without open critical errors">
+      <svg viewBox="0 0 80 80" className="h-24 w-24 -rotate-90">
+        <circle cx="40" cy="40" r={radius} fill="none" stroke="rgba(148,163,184,0.15)" strokeWidth="7" />
+        <circle
+          cx="40" cy="40" r={radius} fill="none" stroke={color} strokeWidth="7" strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={circumference * (1 - value / 100)}
+          style={{ transition: 'stroke-dashoffset 1s ease', filter: `drop-shadow(0 0 6px ${color})` }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-xl font-bold text-[var(--text-primary)] tabular-nums">{score === null ? '—' : `${score}%`}</span>
+        <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">health</span>
+      </div>
+    </div>
+  )
+}
+
+function Hero({ name, data }) {
+  return (
+    <div className="card gradient-border relative overflow-hidden p-6">
+      <div className="aurora -top-24 -left-10 h-56 w-56 bg-violet-600/30" />
+      <div className="aurora -bottom-24 right-10 h-56 w-56 bg-cyan-500/20" style={{ animationDelay: '-6s' }} />
+      <div className="relative flex items-center justify-between gap-6 flex-wrap">
+        <div className="min-w-0">
+          <p className="text-xs font-medium uppercase tracking-widest text-brand-400">Good {getGreeting()}</p>
+          <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-[var(--text-primary)] mt-1">
+            Welcome back, <span className="gradient-text">{name}</span>
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)] mt-1">
+            {data ? summarize(data.stats) : "Here's what's happening with your repositories."}
+          </p>
+          <div className="flex gap-2 mt-4">
+            <Link to="/errors" className="btn-primary text-sm py-1.5"><Bug className="h-4 w-4" />View errors</Link>
+            <Link to="/repositories" className="btn-secondary text-sm py-1.5"><GitBranch className="h-4 w-4" />Repositories</Link>
+          </div>
+        </div>
+        {data && <HealthRing score={healthScore(data.repositories)} />}
+      </div>
+    </div>
+  )
+}
+
 export function DashboardPage() {
   const { user } = useAuth()
   const { data, loading, error, reload } = useApi(loadDashboard)
+  const hero = <Hero name={user?.name?.split(' ')[0]} data={data} />
 
-  const greeting = (
-    <div className="flex items-center justify-between">
-      <div>
-        <h2 className="text-xl font-bold text-[var(--text-primary)]">
-          Good {getGreeting()}, {user?.name?.split(' ')[0]} 👋
-        </h2>
-        <p className="text-sm text-[var(--text-secondary)] mt-0.5">Here's what's happening with your repositories.</p>
+  if (loading) return <div className="space-y-6 max-w-7xl">{hero}<LoadingState /></div>
+  if (error) {
+    return (
+      <div className="space-y-6 max-w-7xl">
+        {hero}
+        <ErrorState error={error} onRetry={reload} />
+        <SystemStatus />
       </div>
-      <Link to="/repositories" className="btn-secondary text-sm py-1.5 hidden sm:flex">
-        <GitBranch className="h-4 w-4" />
-        View repos
-      </Link>
-    </div>
-  )
-
-  if (loading) return <div className="space-y-6 max-w-7xl">{greeting}<LoadingState /></div>
-  if (error) return <div className="space-y-6 max-w-7xl">{greeting}<ErrorState error={error} onRetry={reload} /></div>
+    )
+  }
 
   const { stats, incidents, repositories, github, slack } = data
 
   if (!github.connected && repositories.length === 0) {
     return (
       <div className="space-y-6 max-w-7xl">
-        {greeting}
+        {hero}
+        <SystemStatus />
         <div className="card">
           <EmptyState
             icon={Code2}
             title="Connect GitHub to get started"
-            description="Install the RepoSentinel GitHub App, choose repositories to monitor, then add the SDK to your app."
+            description="Install the PipelineIQ GitHub App, choose repositories to monitor, then add the SDK to your app."
             action={<Link to="/integrations" className="btn-primary text-sm">Go to integrations</Link>}
           />
         </div>
@@ -86,24 +149,32 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      {greeting}
+      {hero}
 
       {!slack.connected && (
-        <div className="flex items-center gap-3 rounded-xl border border-green-500/20 bg-green-500/5 px-4 py-3">
-          <MessageSquare className="h-5 w-5 text-green-500 flex-shrink-0" />
+        <div className="flex items-center gap-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3">
+          <MessageSquare className="h-5 w-5 text-emerald-400 flex-shrink-0" />
           <p className="text-sm text-[var(--text-secondary)] flex-1">Connect Slack to receive real-time error alerts in your team channel.</p>
-          <Link to="/integrations" className="text-xs font-medium text-green-400 hover:text-green-300 flex items-center gap-1">
+          <Link to="/integrations" className="text-xs font-medium text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
             Connect <ArrowRight className="h-3 w-3" />
           </Link>
         </div>
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard icon={GitBranch} value={stats.repositories} label="Repositories" iconColor="text-brand-400" iconBg="bg-brand-500/10" />
-        <StatCard icon={Bug} value={stats.open_errors} label="Open errors" iconColor="text-orange-400" iconBg="bg-orange-500/10" />
-        <StatCard icon={AlertTriangle} value={stats.critical_errors} label="Critical" iconColor="text-red-400" iconBg="bg-red-500/10" />
-        <StatCard icon={Activity} value={stats.open_incidents} label="Open incidents" iconColor="text-violet-400" iconBg="bg-violet-500/10" />
+        <StatCard icon={GitBranch} value={stats.repositories} label="Repositories" hint="monitored" tone="violet" />
+        <StatCard
+          icon={Bug} value={stats.open_errors} label="Open errors" tone="orange"
+          hint={`${stats.total_occurrences} events total`} spark={stats.trend.map((d) => d.events)}
+        />
+        <StatCard
+          icon={AlertTriangle} value={stats.critical_errors} label="Critical" tone="red"
+          hint="open, critical severity" spark={stats.trend.map((d) => d.critical)}
+        />
+        <StatCard icon={Activity} value={stats.open_incidents} label="Open incidents" hint="open or investigating" tone="cyan" />
       </div>
+
+      <SystemStatus />
 
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="card lg:col-span-2 p-5">
@@ -186,8 +257,8 @@ export function DashboardPage() {
 function IntegrationStatus({ connected, label, sub }) {
   return (
     <div className="card flex items-center gap-4 p-4">
-      <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0', connected ? 'bg-green-500/10' : 'bg-[var(--bg-tertiary)]')}>
-        {connected ? <CheckCircle className="h-5 w-5 text-green-500" /> : <AlertTriangle className="h-5 w-5 text-[var(--text-muted)]" />}
+      <div className={cn('flex h-10 w-10 items-center justify-center rounded-lg flex-shrink-0', connected ? 'bg-emerald-500/10' : 'bg-[var(--bg-tertiary)]')}>
+        {connected ? <CheckCircle className="h-5 w-5 text-emerald-400" /> : <AlertTriangle className="h-5 w-5 text-[var(--text-muted)]" />}
       </div>
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--text-primary)]">{label}</p>

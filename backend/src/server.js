@@ -7,7 +7,7 @@ assertProductionConfig()
 initQueues()
 
 const server = createApp().listen(env.port, () => {
-  logger.info(`RepoSentinel API listening on http://localhost:${env.port}`, { env: env.nodeEnv, features })
+  logger.info(`PipelineIQ API listening on http://localhost:${env.port}`, { env: env.nodeEnv, features })
 })
 
 async function shutdown(signal) {

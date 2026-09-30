@@ -15,7 +15,7 @@ export async function githubRequest(path, { token, method = 'GET', body, fetchIm
     headers: {
       Accept: 'application/vnd.github+json',
       'X-GitHub-Api-Version': '2022-11-28',
-      'User-Agent': 'RepoSentinel',
+      'User-Agent': 'PipelineIQ',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(body ? { 'Content-Type': 'application/json' } : {}),
     },

@@ -1,7 +1,7 @@
 {
-  "name": "@reposentinel/sdk",
+  "name": "@pipelineiq/sdk",
   "version": "0.1.0",
-  "description": "Error capture SDK for RepoSentinel (browser and Node.js)",
+  "description": "Error capture SDK for PipelineIQ (browser and Node.js)",
   "type": "module",
   "main": "./src/index.js",
   "exports": {

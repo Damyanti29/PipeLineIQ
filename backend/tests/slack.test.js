@@ -79,7 +79,7 @@ describe('sendErrorAlert', () => {
     const body = JSON.parse(init.body)
     expect(body.channel).toBe('C123')
     const text = JSON.stringify(body.blocks)
-    for (const expected of ['RepoSentinel Alert', 'me/SplitWise', 'CRITICAL', 'Expense.jsx:47', '127', 'production', 'user is undefined', 'Create GitHub Issue', 'View Error', 'View GitHub']) {
+    for (const expected of ['PipelineIQ Alert', 'me/SplitWise', 'CRITICAL', 'Expense.jsx:47', '127', 'production', 'user is undefined', 'Create GitHub Issue', 'View Error', 'View GitHub']) {
       expect(text).toContain(expected)
     }
     expect(incidentUpdates).toEqual([{ slack_channel_id: 'C123', slack_message_ts: '1700000000.0001' }])

@@ -1,8 +1,8 @@
 {
-  "name": "reposentinel-backend",
+  "name": "pipelineiq-backend",
   "version": "0.1.0",
   "private": true,
-  "description": "RepoSentinel API and background workers",
+  "description": "PipelineIQ API and background workers",
   "type": "module",
   "main": "src/server.js",
   "engines": {

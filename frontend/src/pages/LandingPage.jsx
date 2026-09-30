@@ -1,214 +1,132 @@
 import { Link } from 'react-router-dom'
 import {
-  Code2, MessageSquare, Brain, Bug, Bell, Shield,
-  ArrowRight, Terminal, TrendingUp, ChevronRight, ShieldCheck,
+  Code2, MessageSquare, Brain, Bell, Shield, ArrowRight, Terminal, TrendingUp,
+  Sparkles, Fingerprint, Layers, Server, CheckCircle2, ShieldCheck, FileCode, Repeat2,
 } from 'lucide-react'
 import { CodeBlock } from '@/components/ui/CodeBlock'
 import { Logo } from '@/components/ui/Logo'
+import { PipelineFlow } from '@/components/ui/PipelineFlow'
 import { ThemeToggle } from '@/components/ui/ThemeToggle'
+import { cn } from '@/lib/utils'
 
 const FEATURES = [
-  {
-    icon: Bug,
-    title: 'Error Fingerprinting',
-    description: 'Intelligently groups duplicate errors using type, file, and line number. 127 occurrences shown as one incident.',
-    color: 'text-red-400',
-    bg: 'bg-red-500/10',
-  },
-  {
-    icon: Brain,
-    title: 'AI Root-Cause Analysis',
-    description: 'Powered by Gemini AI. Every error gets an instant diagnosis — root cause, explanation, and a suggested code fix.',
-    color: 'text-violet-400',
-    bg: 'bg-violet-500/10',
-  },
-  {
-    icon: Bell,
-    title: 'Slack Alerts',
-    description: 'Real-time Slack notifications for critical errors with full context, AI diagnosis, and one-click GitHub Issue creation.',
-    color: 'text-green-400',
-    bg: 'bg-green-500/10',
-  },
-  {
-    icon: Code2,
-    title: 'GitHub Integration',
-    description: 'GitHub App with webhook support for push, PRs, deployments, and workflow runs. Auto-create issues from incidents.',
-    color: 'text-slate-300',
-    bg: 'bg-slate-500/10',
-  },
-  {
-    icon: Shield,
-    title: 'Severity Detection',
-    description: 'Rule-based severity scoring (Critical → Low) with AI enhancement. Never miss a production-down event.',
-    color: 'text-orange-400',
-    bg: 'bg-orange-500/10',
-  },
-  {
-    icon: TrendingUp,
-    title: 'Error Analytics',
-    description: 'Trend charts and health overviews for every repository, plus GitHub pushes, PRs, workflow runs and deployments.',
-    color: 'text-blue-400',
-    bg: 'bg-blue-500/10',
-  },
+  { icon: Fingerprint, title: 'Smart fingerprinting', tone: 'from-rose-500 to-red-600',
+    description: 'Duplicate errors are grouped by type, normalized message, file and line. A thousand crashes become one issue.' },
+  { icon: Brain, title: 'AI root-cause analysis', tone: 'from-violet-500 to-indigo-600',
+    description: 'Gemini explains what broke, why, and suggests a concrete code fix. Secrets are redacted before anything leaves your server.' },
+  { icon: Bell, title: 'One alert, not a hundred', tone: 'from-emerald-400 to-teal-600',
+    description: 'Rich Slack alerts with the diagnosis and action buttons. Follow-ups are threaded, so repeats never spam your channel.' },
+  { icon: Code2, title: 'GitHub native', tone: 'from-slate-500 to-slate-700',
+    description: 'A GitHub App with verified webhooks. Create an issue in one click, and closing it resolves the incident.' },
+  { icon: Shield, title: 'Severity detection', tone: 'from-orange-400 to-amber-600',
+    description: 'Rule-based severity from the first event, refined by AI. Production-down issues rise to the top.' },
+  { icon: TrendingUp, title: 'Repository health', tone: 'from-cyan-400 to-sky-600',
+    description: 'Trends, health scores and a live feed of pushes, PRs, workflow runs and deployments per repository.' },
 ]
 
 const HOW_IT_WORKS = [
-  { step: '01', title: 'Connect GitHub', desc: 'Install the RepoSentinel GitHub App and pick the repositories you want to monitor.' },
-  { step: '02', title: 'Add the SDK', desc: 'Add the JavaScript SDK with your project DSN. It captures exceptions and unhandled rejections automatically.' },
-  { step: '03', title: 'AI Diagnoses', desc: 'Every error is fingerprinted, grouped, and analyzed by Gemini AI for root cause and fix suggestions.' },
-  { step: '04', title: 'Slack Alert', desc: 'Critical errors trigger an instant Slack alert with full context, AI diagnosis, and action buttons.' },
+  { title: 'Connect GitHub', desc: 'Install the PipelineIQ GitHub App and pick the repositories to monitor.' },
+  { title: 'Add the SDK', desc: 'Drop in the JavaScript SDK with your DSN. Uncaught errors are captured automatically.' },
+  { title: 'AI diagnoses', desc: 'Each new error group is fingerprinted and analyzed by Gemini for root cause and fix.' },
+  { title: 'Get alerted', desc: 'One Slack alert per problem, with the diagnosis and a button to open a GitHub issue.' },
 ]
 
-const SDK_SNIPPET = `import RepoSentinel from '@reposentinel/sdk'
+const HERO_PIPELINE = [
+  { key: 'app', label: 'Your app', sublabel: 'SDK', icon: Terminal, status: 'idle' },
+  { key: 'api', label: 'Ingest', sublabel: 'API', icon: Server, status: 'idle' },
+  { key: 'group', label: 'Group', sublabel: 'Fingerprint', icon: Layers, status: 'idle' },
+  { key: 'ai', label: 'Diagnose', sublabel: 'Gemini', icon: Brain, status: 'idle' },
+  { key: 'alert', label: 'Alert', sublabel: 'Slack', icon: MessageSquare, status: 'idle' },
+  { key: 'issue', label: 'Track', sublabel: 'GitHub', icon: Code2, status: 'idle' },
+]
 
-RepoSentinel.init({
+const SDK_SNIPPET = `import PipelineIQ from '@pipelineiq/sdk'
+
+PipelineIQ.init({
   dsn: 'YOUR_PROJECT_DSN',
   environment: 'production',
 })
 
 // Uncaught errors are captured automatically, or report one yourself:
-RepoSentinel.captureException(error)`
+PipelineIQ.captureException(error)`
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
       {/* Navbar */}
-      <nav className="fixed top-0 inset-x-0 z-50 h-16 flex items-center justify-between px-6 md:px-12 border-b border-[var(--border)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
+      <nav className="fixed top-0 inset-x-0 z-50 h-16 flex items-center justify-between px-6 md:px-12 border-b border-[var(--border)] bg-[var(--bg-primary)]/60 backdrop-blur-xl">
         <Link to="/"><Logo subtitle={null} /></Link>
-        <div className="hidden md:flex items-center gap-6 text-sm text-[var(--text-secondary)]">
-          <a href="#features" className="hover:text-[var(--text-primary)] transition-colors">Features</a>
+        <div className="hidden md:flex items-center gap-8 text-sm text-[var(--text-secondary)]">
           <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-colors">How it works</a>
+          <a href="#features" className="hover:text-[var(--text-primary)] transition-colors">Features</a>
           <a href="#sdk" className="hover:text-[var(--text-primary)] transition-colors">SDK</a>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Link to="/login" className="btn-ghost text-sm py-1.5">Sign in</Link>
+          <Link to="/login" className="btn-ghost text-sm py-1.5 hidden sm:inline-flex">Sign in</Link>
           <Link to="/login" className="btn-primary text-sm py-1.5">Get started</Link>
         </div>
       </nav>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-24 px-6 overflow-hidden hero-grid">
-        {/* Glow blobs */}
-        <div className="absolute top-24 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-brand-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-48 left-1/4 w-64 h-64 bg-violet-700/8 rounded-full blur-3xl pointer-events-none" />
+      <section className="relative pt-36 pb-20 px-6 hero-grid">
+        <div className="aurora top-10 left-[10%] h-96 w-96 bg-violet-600/30" />
+        <div className="aurora top-40 right-[5%] h-80 w-80 bg-cyan-500/20" style={{ animationDelay: '-5s' }} />
+        <div className="aurora top-[28rem] left-[40%] h-72 w-72 bg-indigo-600/20" style={{ animationDelay: '-9s' }} />
 
-        <div className="relative max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full border border-brand-600/30 bg-brand-600/10 px-4 py-1.5 text-xs text-brand-300 mb-8 animate-fade-in">
-            <span className="h-1.5 w-1.5 rounded-full bg-brand-400 animate-pulse" />
-            Powered by Google Gemini AI
-            <ChevronRight className="h-3.5 w-3.5" />
+        <div className="relative max-w-5xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/30 bg-brand-500/10 px-4 py-1.5 text-xs text-brand-300 mb-8 animate-fade-in backdrop-blur">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI root-cause analysis powered by Google Gemini
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 animate-slide-up leading-[1.05]">
+          <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 animate-slide-up leading-[1.02]">
             From crash to diagnosis
             <br />
-            <span className="gradient-text">to Slack — automatically.</span>
+            <span className="gradient-text">to Slack, automatically.</span>
           </h1>
 
           <p className="text-lg md:text-xl text-[var(--text-secondary)] max-w-2xl mx-auto mb-10 animate-slide-up">
-            RepoSentinel monitors your GitHub repositories, captures application errors, runs AI-powered root-cause analysis, and fires Slack alerts — all in seconds.
+            PipelineIQ captures errors from your apps, groups duplicates, asks AI what went wrong and alerts your team
+            once, with the fix attached.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-16 animate-slide-up">
-            <Link to="/login" className="btn-primary text-base px-6 py-3 glow-brand">
-              Start monitoring
-              <ArrowRight className="h-4 w-4" />
+            <Link to="/login" className="btn-primary text-base px-7 py-3">
+              Start monitoring <ArrowRight className="h-4 w-4" />
             </Link>
-            <a
-              href="#how-it-works"
-              className="btn-secondary text-base px-6 py-3"
-            >
-              <Terminal className="h-4 w-4" />
-              See how it works
+            <a href="#sdk" className="btn-secondary text-base px-7 py-3 backdrop-blur">
+              <Terminal className="h-4 w-4" /> View the SDK
             </a>
           </div>
 
-          {/* Dashboard mockup */}
-          <div className="relative mx-auto max-w-3xl rounded-2xl border border-[var(--border)] bg-[var(--bg-secondary)] overflow-hidden shadow-2xl shadow-black/30 animate-slide-up">
-            {/* Window chrome */}
-            <div className="flex items-center gap-2 px-4 py-3 border-b border-[var(--border)] bg-[var(--bg-tertiary)]">
-              <span className="h-3 w-3 rounded-full bg-red-500/80" />
-              <span className="h-3 w-3 rounded-full bg-amber-500/80" />
-              <span className="h-3 w-3 rounded-full bg-green-500/80" />
-              <span className="ml-3 text-xs text-[var(--text-muted)] font-mono">reposentinel/dashboard</span>
-            </div>
-            {/* Dashboard preview content */}
-            <div className="p-6 text-left">
-              <div className="grid grid-cols-4 gap-3 mb-6">
-                {[
-                  { label: 'Repositories', value: '4', color: 'text-brand-400' },
-                  { label: 'Total Errors', value: '128', color: 'text-[var(--text-primary)]' },
-                  { label: 'Critical', value: '7', color: 'text-red-400' },
-                  { label: 'Incidents', value: '12', color: 'text-orange-400' },
-                ].map(s => (
-                  <div key={s.label} className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-3">
-                    <p className={`text-2xl font-bold tabular-nums ${s.color}`}>{s.value}</p>
-                    <p className="text-xs text-[var(--text-muted)] mt-0.5">{s.label}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-4 space-y-3">
-                <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Recent Incidents</p>
-                {[
-                  { type: 'TypeError', file: 'Expense.jsx:47', count: '127 occurrences', sev: 'bg-red-500' },
-                  { type: 'HTTPError', file: 'db_service.py:89', count: '23 occurrences', sev: 'bg-orange-500' },
-                  { type: 'ReferenceError', file: 'GroupDetail.jsx:12', count: '45 occurrences', sev: 'bg-orange-500' },
-                ].map(e => (
-                  <div key={e.type} className="flex items-center gap-3">
-                    <span className={`h-2 w-2 rounded-full flex-shrink-0 ${e.sev}`} />
-                    <span className="text-sm font-mono text-[var(--text-primary)]">{e.type}</span>
-                    <span className="text-xs text-[var(--text-muted)] flex-1 truncate">{e.file}</span>
-                    <span className="text-xs text-[var(--text-muted)]">{e.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {/* Live pipeline */}
+          <div className="card gradient-border p-8 mb-10 animate-slide-up">
+            <p className="label mb-6">The pipeline</p>
+            <PipelineFlow nodes={HERO_PIPELINE} showStatusText={false} />
           </div>
-        </div>
-      </section>
 
-      {/* Logos */}
-      <section className="py-12 border-y border-[var(--border)] bg-[var(--bg-secondary)]">
-        <div className="max-w-4xl mx-auto px-6 text-center">
-          <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest mb-8">Integrates with the tools you already use</p>
-          <div className="flex items-center justify-center gap-12 flex-wrap">
-            {[
-              { icon: Code2, name: 'GitHub' },
-              { icon: MessageSquare, name: 'Slack' },
-              { icon: Brain, name: 'Gemini AI' },
-            ].map(({ icon: Icon, name }) => (
-              <div key={name} className="flex items-center gap-2.5 text-[var(--text-secondary)]">
-                <Icon className="h-6 w-6" />
-                <span className="text-base font-semibold">{name}</span>
-              </div>
-            ))}
+          {/* Product preview: an example alert and its AI diagnosis */}
+          <div className="grid md:grid-cols-2 gap-5 text-left">
+            <PreviewErrorCard />
+            <PreviewSlackCard />
           </div>
+          <p className="text-xs text-[var(--text-muted)] mt-4">Illustrative example of an error group and its Slack alert.</p>
         </div>
       </section>
 
       {/* How it works */}
-      <section id="how-it-works" className="py-24 px-6">
+      <section id="how-it-works" className="py-24 px-6 border-t border-[var(--border)]">
         <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="label mb-3">How it works</p>
-            <h2 className="text-4xl font-bold mb-4">Four steps from error to fix</h2>
-            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
-              RepoSentinel automates the incident response workflow so your team can focus on shipping, not debugging.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-4 gap-6">
-            {HOW_IT_WORKS.map(({ step, title, desc }, i) => (
-              <div key={step} className="relative">
-                {i < HOW_IT_WORKS.length - 1 && (
-                  <div className="hidden md:block absolute top-6 left-full w-full h-px bg-gradient-to-r from-brand-600/40 to-transparent -translate-y-px z-0" />
-                )}
-                <div className="card p-5 relative z-10">
-                  <span className="font-mono text-xs text-brand-400 font-bold">{step}</span>
-                  <h3 className="font-semibold text-[var(--text-primary)] mt-2 mb-2">{title}</h3>
-                  <p className="text-sm text-[var(--text-secondary)]">{desc}</p>
+          <SectionHeading eyebrow="How it works" title="Four steps from error to fix" />
+          <div className="grid md:grid-cols-4 gap-5">
+            {HOW_IT_WORKS.map(({ title, desc }, i) => (
+              <div key={title} className="card-hover p-6 relative">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-sm font-bold text-white shadow-[0_0_20px_-4px_rgba(139,92,246,0.8)] mb-4">
+                  {i + 1}
                 </div>
+                <h3 className="font-semibold text-[var(--text-primary)] mb-2">{title}</h3>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{desc}</p>
               </div>
             ))}
           </div>
@@ -216,20 +134,18 @@ export function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24 px-6 bg-[var(--bg-secondary)]">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <p className="label mb-3">Features</p>
-            <h2 className="text-4xl font-bold mb-4">Everything your team needs</h2>
-          </div>
+      <section id="features" className="relative py-24 px-6 bg-[var(--bg-secondary)] border-y border-[var(--border)] overflow-hidden">
+        <div className="aurora -top-20 right-0 h-80 w-80 bg-violet-600/15" />
+        <div className="relative max-w-5xl mx-auto">
+          <SectionHeading eyebrow="Features" title="Everything between the crash and the fix" />
           <div className="grid md:grid-cols-3 gap-5">
-            {FEATURES.map(({ icon: Icon, title, description, color, bg }) => (
-              <div key={title} className="card-hover p-6">
-                <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${bg} mb-4`}>
-                  <Icon className={`h-5 w-5 ${color}`} />
+            {FEATURES.map(({ icon: Icon, title, description, tone }) => (
+              <div key={title} className="card-hover p-6 group">
+                <div className={cn('flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br shadow-lg mb-5 transition-transform group-hover:scale-110', tone)}>
+                  <Icon className="h-5 w-5 text-white" />
                 </div>
                 <h3 className="font-semibold text-[var(--text-primary)] mb-2">{title}</h3>
-                <p className="text-sm text-[var(--text-secondary)]">{description}</p>
+                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">{description}</p>
               </div>
             ))}
           </div>
@@ -238,35 +154,35 @@ export function LandingPage() {
 
       {/* SDK */}
       <section id="sdk" className="py-24 px-6">
-        <div className="max-w-3xl mx-auto">
-          <div className="text-center mb-12">
+        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+          <div>
             <p className="label mb-3">SDK</p>
-            <h2 className="text-4xl font-bold mb-4">A few lines to start capturing</h2>
-            <p className="text-[var(--text-secondary)] max-w-lg mx-auto">
-              Works in the browser and Node.js. Identical errors are fingerprinted and grouped, so 100 crashes become one incident and one Slack alert.
-            </p>
+            <h2 className="text-4xl font-bold tracking-tight mb-4">A few lines to start capturing</h2>
+            <p className="text-[var(--text-secondary)] mb-6">Works in the browser and Node.js. No backend URL is hardcoded: everything comes from your DSN.</p>
+            <ul className="space-y-3 text-sm text-[var(--text-secondary)]">
+              {['Captures uncaught errors and promise rejections', 'Per-repository ingest key, submit-only', 'beforeSend hook to scrub or drop events', 'Never throws, never breaks your app'].map((item) => (
+                <li key={item} className="flex items-center gap-2.5">
+                  <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />{item}
+                </li>
+              ))}
+            </ul>
           </div>
-          <CodeBlock code={SDK_SNIPPET} language="javascript" />
+          <div className="gradient-border rounded-xl shadow-[0_20px_60px_-20px_rgba(124,58,237,0.5)]">
+            <CodeBlock code={SDK_SNIPPET} language="javascript" />
+          </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-6 bg-[var(--bg-secondary)]">
-        <div className="max-w-2xl mx-auto text-center">
-          <div className="card p-12 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-brand-600/5 to-violet-700/5 pointer-events-none" />
-            <ShieldCheck className="h-10 w-10 text-brand-400 mx-auto mb-4" />
-            <h2 className="text-3xl font-bold mb-3">Start monitoring in minutes</h2>
-            <p className="text-[var(--text-secondary)] mb-8">
-              Connect GitHub, add the SDK and get your first AI diagnosis in a Slack alert.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link to="/login" className="btn-primary text-base px-6 py-3 justify-center glow-brand">
-                Create an account
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
+      <section className="px-6 pb-24">
+        <div className="relative max-w-4xl mx-auto overflow-hidden rounded-3xl bg-gradient-to-br from-violet-600 via-indigo-600 to-cyan-600 p-12 text-center shadow-[0_30px_80px_-30px_rgba(124,58,237,0.8)]">
+          <div className="absolute inset-0 hero-grid opacity-40" />
+          <ShieldCheck className="relative h-12 w-12 text-white/90 mx-auto mb-5" />
+          <h2 className="relative text-3xl md:text-4xl font-bold text-white mb-3">Start monitoring in minutes</h2>
+          <p className="relative text-white/80 mb-8 max-w-lg mx-auto">Connect GitHub, add the SDK and get your first AI diagnosis in a Slack alert.</p>
+          <Link to="/login" className="relative inline-flex items-center gap-2 rounded-lg bg-white px-7 py-3 text-base font-semibold text-indigo-700 shadow-xl hover:bg-white/90 transition-colors">
+            Create an account <ArrowRight className="h-4 w-4" />
+          </Link>
         </div>
       </section>
 
@@ -274,7 +190,7 @@ export function LandingPage() {
       <footer className="border-t border-[var(--border)] py-8 px-6">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <Logo size="sm" subtitle={null} />
-          <p className="text-xs text-[var(--text-muted)]">© 2026 RepoSentinel. Built with React, Express, Supabase and Gemini.</p>
+          <p className="text-xs text-[var(--text-muted)]">© 2026 PipelineIQ. Built with React, Express, Supabase and Gemini.</p>
           <div className="flex items-center gap-4 text-xs text-[var(--text-muted)]">
             <a href="#features" className="hover:text-[var(--text-primary)] transition-colors">Features</a>
             <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition-colors">How it works</a>
@@ -282,6 +198,69 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+    </div>
+  )
+}
+
+function SectionHeading({ eyebrow, title }) {
+  return (
+    <div className="text-center mb-14">
+      <p className="label mb-3">{eyebrow}</p>
+      <h2 className="text-4xl font-bold tracking-tight">{title}</h2>
+    </div>
+  )
+}
+
+function PreviewErrorCard() {
+  return (
+    <div className="card gradient-border p-5 animate-float">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
+        <span className="h-2.5 w-2.5 rounded-full bg-red-500 pulse-ring text-red-500" />
+        <span className="font-mono text-sm font-semibold">TypeError</span>
+        <span className="badge-critical">Critical</span>
+        <span className="badge-open">Open</span>
+      </div>
+      <p className="font-mono text-xs text-[var(--text-secondary)] mb-4">Cannot read properties of undefined (reading 'name')</p>
+      <div className="flex gap-4 text-xs text-[var(--text-muted)] mb-4">
+        <span className="flex items-center gap-1.5"><FileCode className="h-3.5 w-3.5" />Expense.jsx:47</span>
+        <span className="flex items-center gap-1.5"><Repeat2 className="h-3.5 w-3.5" />127 occurrences · 1 group</span>
+      </div>
+      <div className="rounded-lg border border-brand-500/20 bg-brand-500/5 p-3">
+        <p className="flex items-center gap-1.5 text-xs font-semibold text-brand-300 mb-1"><Brain className="h-3.5 w-3.5" />AI diagnosis</p>
+        <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+          <code>user</code> is undefined after the session expires, but ExpenseCard reads <code>user.name</code> without a guard.
+        </p>
+        <pre className="mt-2 rounded bg-black/40 p-2 text-[11px] text-emerald-300 overflow-x-auto">{"const name = user?.name ?? 'Unknown'"}</pre>
+      </div>
+    </div>
+  )
+}
+
+function PreviewSlackCard() {
+  return (
+    <div className="card p-5 animate-float" style={{ animationDelay: '-3s' }}>
+      <div className="flex items-center gap-2 mb-4">
+        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#4a154b]"><MessageSquare className="h-4 w-4 text-white" /></div>
+        <div>
+          <p className="text-sm font-semibold">#alerts-production</p>
+          <p className="text-[10px] text-[var(--text-muted)]">PipelineIQ · APP</p>
+        </div>
+      </div>
+      <div className="border-l-4 border-red-500 pl-3 space-y-2">
+        <p className="text-sm font-bold">🚨 PipelineIQ Alert</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+          <p><span className="font-semibold">Repository</span><br /><span className="text-[var(--text-secondary)]">acme/splitwise</span></p>
+          <p><span className="font-semibold">Severity</span><br /><span className="text-red-400">🔴 CRITICAL</span></p>
+          <p><span className="font-semibold">File</span><br /><span className="font-mono text-[var(--text-secondary)]">Expense.jsx:47</span></p>
+          <p><span className="font-semibold">Environment</span><br /><span className="text-[var(--text-secondary)]">production</span></p>
+        </div>
+        <div className="flex flex-wrap gap-2 pt-2">
+          {['View Error', 'View GitHub'].map((label) => (
+            <span key={label} className="rounded border border-[var(--border)] px-2.5 py-1 text-[11px] font-medium">{label}</span>
+          ))}
+          <span className="rounded bg-emerald-600 px-2.5 py-1 text-[11px] font-medium text-white">Create GitHub Issue</span>
+        </div>
+      </div>
     </div>
   )
 }

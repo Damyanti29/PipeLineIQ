@@ -1,4 +1,4 @@
--- RepoSentinel initial schema
+-- PipelineIQ initial schema
 -- Users come from Supabase Auth (auth.users). Every user-owned row links back to auth.users.
 
 create extension if not exists pgcrypto;

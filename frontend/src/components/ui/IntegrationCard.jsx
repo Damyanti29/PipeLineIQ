@@ -6,7 +6,7 @@ const INTEGRATION_CONFIG = {
   github: {
     icon: Code2,
     name: 'GitHub',
-    description: 'Install the RepoSentinel GitHub App to pick repositories, receive webhook events and create issues from incidents.',
+    description: 'Install the PipelineIQ GitHub App to pick repositories, receive webhook events and create issues from incidents.',
     bg: 'bg-[#24292e]',
   },
   slack: {
@@ -73,7 +73,7 @@ export function IntegrationCard({ type, connected, configured = true, details = 
                 <Zap className="h-3.5 w-3.5" />Send test alert
               </button>
             )}
-            {onConnect && (
+            {onConnect && type === 'github' && (
               <button onClick={onConnect} disabled={busy || !configured} className="btn-secondary text-xs py-1.5">
                 Add account
               </button>

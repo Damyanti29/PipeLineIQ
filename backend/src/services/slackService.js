@@ -121,7 +121,7 @@ export function buildErrorAlertBlocks({ incident, error, repository, frontendUrl
   const ai = error.ai_analysis?.status === 'completed' ? error.ai_analysis : null
   const location = error.file_name ? `${error.file_name}${error.line_number ? `:${error.line_number}` : ''}` : 'unknown'
   const blocks = [
-    { type: 'header', text: { type: 'plain_text', text: '🚨 RepoSentinel Alert', emoji: true } },
+    { type: 'header', text: { type: 'plain_text', text: '🚨 PipelineIQ Alert', emoji: true } },
     {
       type: 'section',
       fields: [
@@ -208,7 +208,7 @@ export async function sendResolutionNotification(incidentId) {
 export async function sendTestMessage(userId) {
   const integration = await getIntegration(userId)
   if (!integration) throw notFound('Slack is not connected')
-  const result = await postMessage(integration, { text: '✅ RepoSentinel is connected. Error alerts will be posted in this channel.' })
+  const result = await postMessage(integration, { text: '✅ PipelineIQ is connected. Error alerts will be posted in this channel.' })
   if (!result.ok) throw badRequest(`Slack rejected the message: ${result.skipped}`)
   return result
 }

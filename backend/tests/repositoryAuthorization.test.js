@@ -71,24 +71,24 @@ describe('repository authorization (SDK ingest key)', () => {
   })
 
   it('rejects a wrong ingest key', async () => {
-    const res = await request(app).post('/api/errors').set('X-RepoSentinel-Key', 'wrong-key').send(validError(OWN_REPO))
+    const res = await request(app).post('/api/errors').set('X-PipelineIQ-Key', 'wrong-key').send(validError(OWN_REPO))
     expect(res.status).toBe(401)
     expect(queue.enqueue).not.toHaveBeenCalled()
   })
 
   it('gives the same answer for unknown repositories (no id probing)', async () => {
-    const res = await request(app).post('/api/errors').set('X-RepoSentinel-Key', 'correct-key').send(validError(OTHER_REPO))
+    const res = await request(app).post('/api/errors').set('X-PipelineIQ-Key', 'correct-key').send(validError(OTHER_REPO))
     expect(res.status).toBe(401)
     expect(res.body.error.message).toBe('Invalid ingest key')
   })
 
   it('rejects ingestion when monitoring is disabled', async () => {
-    const res = await request(app).post('/api/errors').set('X-RepoSentinel-Key', 'correct-key').send(validError(DISABLED_REPO))
+    const res = await request(app).post('/api/errors').set('X-PipelineIQ-Key', 'correct-key').send(validError(DISABLED_REPO))
     expect(res.status).toBe(403)
   })
 
   it('accepts a valid key and queues processing without waiting for it', async () => {
-    const res = await request(app).post('/api/errors').set('X-RepoSentinel-Key', 'correct-key').send(validError(OWN_REPO))
+    const res = await request(app).post('/api/errors').set('X-PipelineIQ-Key', 'correct-key').send(validError(OWN_REPO))
     expect(res.status).toBe(202)
     expect(res.body.data).toMatchObject({ accepted: true, queued: true })
     expect(queue.enqueue).toHaveBeenCalledWith(

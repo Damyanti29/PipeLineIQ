@@ -5,12 +5,12 @@ export function parseDsn(dsn) {
   try {
     url = new URL(dsn)
   } catch {
-    throw new Error('RepoSentinel: invalid DSN')
+    throw new Error('PipelineIQ: invalid DSN')
   }
   const segments = url.pathname.split('/').filter(Boolean)
   const repositoryId = segments.pop()
   const ingestKey = decodeURIComponent(url.username)
-  if (!ingestKey || !repositoryId) throw new Error('RepoSentinel: DSN must include an ingest key and repository id')
+  if (!ingestKey || !repositoryId) throw new Error('PipelineIQ: DSN must include an ingest key and repository id')
 
   const basePath = segments.length ? `/${segments.join('/')}` : ''
   return {
@@ -29,14 +29,14 @@ export function send(config, payload) {
   const body = JSON.stringify(payload)
   const request = fetch(config.endpoint, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'X-RepoSentinel-Key': config.ingestKey },
+    headers: { 'Content-Type': 'application/json', 'X-PipelineIQ-Key': config.ingestKey },
     body,
     // Lets browser requests finish while the page unloads (limited to 64KB bodies).
     keepalive: body.length < 60000,
   })
     .then((response) => ({ ok: response.ok, status: response.status }))
     .catch((error) => {
-      if (config.debug) console.warn('RepoSentinel: failed to send event', error)
+      if (config.debug) console.warn('PipelineIQ: failed to send event', error)
       return { ok: false, reason: 'network_error' }
     })
     .finally(() => pending.delete(request))

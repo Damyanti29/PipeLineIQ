@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Menu, Search } from 'lucide-react'
+import { ApiStatusPill } from '@/components/ui/ApiStatusPill'
 import { useLocation, useNavigate } from 'react-router-dom'
 
 const PAGE_TITLES = {
@@ -17,7 +18,7 @@ export function Navbar({ onOpenMenu }) {
   const [query, setQuery] = useState('')
 
   const base = '/' + pathname.split('/')[1]
-  const page = PAGE_TITLES[base] ?? { title: 'RepoSentinel', subtitle: '' }
+  const page = PAGE_TITLES[base] ?? { title: 'PipelineIQ', subtitle: '' }
 
   const handleSearch = (e) => {
     e.preventDefault()
@@ -26,7 +27,7 @@ export function Navbar({ onOpenMenu }) {
   }
 
   return (
-    <header className="h-16 flex items-center gap-4 px-4 md:px-6 border-b border-[var(--border)] bg-[var(--bg-primary)] sticky top-0 z-20">
+    <header className="h-16 flex items-center gap-4 px-4 md:px-6 border-b border-[var(--border)] bg-[var(--bg-primary)]/70 backdrop-blur-xl sticky top-0 z-20">
       <button
         onClick={onOpenMenu}
         className="p-2 -ml-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)] md:hidden"
@@ -39,6 +40,8 @@ export function Navbar({ onOpenMenu }) {
         <h1 className="text-base font-semibold text-[var(--text-primary)] truncate">{page.title}</h1>
         {page.subtitle && <p className="text-xs text-[var(--text-muted)] hidden sm:block">{page.subtitle}</p>}
       </div>
+
+      <ApiStatusPill />
 
       <form onSubmit={handleSearch} className="relative hidden md:flex items-center" role="search">
         <Search className="absolute left-3 h-4 w-4 text-[var(--text-muted)] pointer-events-none" />

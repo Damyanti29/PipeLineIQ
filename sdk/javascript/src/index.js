@@ -6,7 +6,7 @@ let removeHandlers = null
 
 function deliver(event) {
   if (!config) {
-    console.warn('RepoSentinel: call RepoSentinel.init({ dsn }) before capturing events')
+    console.warn('PipelineIQ: call PipelineIQ.init({ dsn }) before capturing events')
     return Promise.resolve({ ok: false, reason: 'not_initialized' })
   }
   if (config.sampleRate < 1 && Math.random() >= config.sampleRate) {
@@ -19,7 +19,7 @@ function deliver(event) {
 
 /**
  * @param {object} options
- * @param {string} options.dsn               Project DSN from the RepoSentinel dashboard.
+ * @param {string} options.dsn               Project DSN from the PipelineIQ dashboard.
  * @param {string} [options.environment]     Defaults to "production".
  * @param {string} [options.release]         Your app version / commit sha.
  * @param {boolean} [options.captureUnhandled] Capture uncaught errors and rejections (default true).
@@ -29,7 +29,7 @@ function deliver(event) {
  * @param {boolean} [options.debug]          Log delivery failures to the console.
  */
 function init(options = {}) {
-  if (!options.dsn) throw new Error('RepoSentinel: `dsn` is required')
+  if (!options.dsn) throw new Error('PipelineIQ: `dsn` is required')
 
   removeHandlers?.()
   config = {
@@ -68,7 +68,7 @@ function close() {
   return flush()
 }
 
-const RepoSentinel = { init, captureException, captureMessage, flush, close }
+const PipelineIQ = { init, captureException, captureMessage, flush, close }
 
 export { init, captureException, captureMessage, flush, close }
-export default RepoSentinel
+export default PipelineIQ

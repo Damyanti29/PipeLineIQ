@@ -137,7 +137,7 @@ function RepositoryPicker({ onAdded }) {
         <div>
           <h3 className="section-title">Add from GitHub</h3>
           <p className="text-xs text-[var(--text-muted)] mt-0.5">
-            Repositories your RepoSentinel GitHub App installation can access.{' '}
+            Repositories your PipelineIQ GitHub App installation can access.{' '}
             <Link to="/integrations" className="text-brand-400 hover:text-brand-300">Manage installation</Link>
           </p>
         </div>

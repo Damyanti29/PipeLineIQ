@@ -1,5 +1,5 @@
 // Background worker process: `npm run worker`.
-// Consumes all RepoSentinel queues so the API never waits on AI, Slack or GitHub calls.
+// Consumes all PipelineIQ queues so the API never waits on AI, Slack or GitHub calls.
 import { Worker } from 'bullmq'
 import { assertProductionConfig } from '../config/env.js'
 import * as errorService from '../services/errorService.js'
@@ -44,7 +44,7 @@ function startWorkers() {
     return worker
   })
 
-  logger.info('RepoSentinel workers started', { queues: Object.keys(processors) })
+  logger.info('PipelineIQ workers started', { queues: Object.keys(processors) })
 
   const shutdown = async (signal) => {
     logger.info(`Received ${signal}, closing workers`)

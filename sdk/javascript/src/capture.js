@@ -1,4 +1,4 @@
-export const SDK_NAME = '@reposentinel/sdk'
+export const SDK_NAME = '@pipelineiq/sdk'
 export const SDK_VERSION = '0.1.0'
 
 const MAX_MESSAGE = 5000

@@ -44,15 +44,26 @@ export function ErrorsPage() {
   }
 
   // Keep the box in sync when the URL changes elsewhere (e.g. the navbar search).
-  useEffect(() => setSearchInput(filters.search), [filters.search])
+  const [syncedSearch, setSyncedSearch] = useState(filters.search)
+  if (syncedSearch !== filters.search) {
+    setSyncedSearch(filters.search)
+    setSearchInput(filters.search)
+  }
 
-  // Debounce free-text search into the URL. Only `searchInput` should re-arm the timer.
+  // Debounce free-text search into the URL.
   useEffect(() => {
+    const term = searchInput.trim()
+    if (term === filters.search) return undefined
     const handle = setTimeout(() => {
-      if (searchInput.trim() !== filters.search) setFilter('search', searchInput.trim())
+      setParams((prev) => {
+        const next = new URLSearchParams(prev)
+        if (term) next.set('search', term)
+        else next.delete('search')
+        return next
+      }, { replace: true })
     }, 300)
     return () => clearTimeout(handle)
-  }, [searchInput])
+  }, [searchInput, filters.search, setParams])
 
   const { data: errors, loading, error, reload } = useApi(() => listErrors(filters), [params.toString()])
   const { data: repositories } = useApi(listRepositories)

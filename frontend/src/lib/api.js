@@ -20,7 +20,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     const apiError = error.response?.data?.error
-    const normalized = new Error(apiError?.message ?? (error.response ? `Request failed (${error.response.status})` : 'Cannot reach the RepoSentinel API'))
+    const normalized = new Error(apiError?.message ?? (error.response ? `Request failed (${error.response.status})` : 'Cannot reach the PipelineIQ API'))
     normalized.status = error.response?.status
     normalized.code = apiError?.code
     normalized.details = apiError?.details

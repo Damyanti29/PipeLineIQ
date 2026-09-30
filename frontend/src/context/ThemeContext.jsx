@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { ThemeContext } from './contexts'
 
-const STORAGE_KEY = 'reposentinel-theme'
+const STORAGE_KEY = 'pipelineiq-theme'
 
 function initialTheme() {
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (stored) return stored
   } catch {
-    // storage unavailable (private mode) — fall back to the OS preference
+    // storage unavailable (private mode) — fall back to the default
   }
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  return 'dark' // the product is designed dark-first; users can switch with the toggle
 }
 
 export function ThemeProvider({ children }) {

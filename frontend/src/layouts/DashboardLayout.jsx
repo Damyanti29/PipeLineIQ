@@ -17,13 +17,19 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[var(--bg-secondary)]">
+      <div className="app-backdrop" aria-hidden="true" />
       <Sidebar
         collapsed={collapsed}
         onToggleCollapsed={() => setCollapsed((c) => !c)}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />
-      <div className={cn('flex flex-col flex-1 min-w-0 transition-all duration-300', collapsed ? 'md:ml-16' : 'md:ml-60')}>
+      <div className={cn('relative z-10 flex flex-col flex-1 min-w-0 transition-all duration-300', collapsed ? 'md:ml-16' : 'md:ml-60')}>
+        {import.meta.env.VITE_DEMO_MODE === 'true' && (
+          <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-cyan-600 px-4 py-1.5 text-center text-xs font-medium text-white">
+            Demo mode: sample data from a local mock server. Nothing is sent to Supabase, GitHub, Slack or Gemini.
+          </div>
+        )}
         <Navbar onOpenMenu={() => setMobileOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 md:p-6 animate-fade-in">
           <Outlet />

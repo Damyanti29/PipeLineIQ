@@ -1,6 +1,4 @@
-// Minimal chainable stand-in for the Supabase query builder.
-// `tables[name]` is either a result ({ data, error, count }) or a function (chain) => result,
-// where `chain` lists the builder calls, e.g. [['select', '*'], ['eq', 'id', '…']].
+
 export function createFakeSupabase({ tables = {}, rpc } = {}) {
   const calls = []
 

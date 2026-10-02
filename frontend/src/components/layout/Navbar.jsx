@@ -8,6 +8,7 @@ const PAGE_TITLES = {
   '/repositories': { title: 'Repositories', subtitle: 'Manage and monitor your GitHub repositories' },
   '/errors':       { title: 'Errors',       subtitle: 'All grouped errors across repositories' },
   '/incidents':    { title: 'Incidents',    subtitle: 'Active and resolved incidents' },
+  '/pipeline':     { title: 'Push monitoring', subtitle: 'CI failures, push reviews and fix PRs' },
   '/integrations': { title: 'Integrations', subtitle: 'Connect GitHub and Slack' },
   '/settings':     { title: 'Settings',     subtitle: 'Account and preferences' },
 }

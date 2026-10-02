@@ -51,32 +51,54 @@ export function parseAnalysis(text) {
 
 const unavailable = (reason) => ({ status: 'unavailable', reason, analyzedAt: new Date().toISOString() })
 
+// Google retires model versions for new keys (404) and sheds load per model (503/429), so an
+// overloaded model is retried once after a pause, then the always-current aliases are tried.
+const FALLBACK_MODELS = ['gemini-flash-latest', 'gemini-flash-lite-latest']
+const RETRY_SAME_MODEL = new Set([429, 503])
+const TRY_NEXT_MODEL = new Set([404, 429, 503])
+export const geminiModels = () => [...new Set([env.geminiModel, ...FALLBACK_MODELS])]
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+
+export async function generateContent(prompt, { fetchImpl = fetch, json = true, timeoutMs = 30000, retryDelayMs = env.isTest ? 0 : 3000 } = {}) {
+  let response
+  for (const model of geminiModels()) {
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      response = await fetchImpl(`${GEMINI_ENDPOINT}/${encodeURIComponent(model)}:generateContent`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.geminiApiKey },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { ...(json ? { responseMimeType: 'application/json' } : {}), temperature: 0.2 },
+        }),
+        signal: AbortSignal.timeout(timeoutMs),
+      })
+      if (response.ok) {
+        const body = await response.json()
+        return { ok: true, model, text: body?.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('') }
+      }
+      if (attempt === 1 && RETRY_SAME_MODEL.has(response.status)) await sleep(retryDelayMs)
+      else break
+    }
+    if (!TRY_NEXT_MODEL.has(response.status)) break
+    logger.warn('Gemini model unavailable, trying fallback', { model, status: response.status })
+  }
+  return { ok: false, status: response.status }
+}
+
 // Never throws: failures return { status: 'unavailable' } so error processing continues.
 export async function analyzeError(error, repository, { fetchImpl = fetch } = {}) {
   if (!features.gemini) return unavailable('not_configured')
 
   try {
-    const response = await fetchImpl(`${GEMINI_ENDPOINT}/${encodeURIComponent(env.geminiModel)}:generateContent`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': env.geminiApiKey },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: buildPrompt(buildErrorContext(error, repository)) }] }],
-        generationConfig: { responseMimeType: 'application/json', temperature: 0.2 },
-      }),
-      signal: AbortSignal.timeout(30000),
-    })
-
-    if (!response.ok) {
-      logger.warn('Gemini request failed', { status: response.status, errorId: error.id })
-      return unavailable(`gemini_http_${response.status}`)
+    const result = await generateContent(buildPrompt(buildErrorContext(error, repository)), { fetchImpl })
+    if (!result.ok) {
+      logger.warn('Gemini request failed', { status: result.status, errorId: error.id })
+      return unavailable(`gemini_http_${result.status}`)
     }
+    if (!result.text) return unavailable('empty_response')
 
-    const body = await response.json()
-    const text = body?.candidates?.[0]?.content?.parts?.map((part) => part.text ?? '').join('')
-    if (!text) return unavailable('empty_response')
-
-    const analysis = parseAnalysis(text)
-    return { status: 'completed', model: env.geminiModel, analyzedAt: new Date().toISOString(), ...analysis }
+    const analysis = parseAnalysis(result.text)
+    return { status: 'completed', model: result.model, analyzedAt: new Date().toISOString(), ...analysis }
   } catch (err) {
     logger.warn('Gemini analysis unavailable', { errorId: error.id, error: err.message })
     return unavailable(err instanceof z.ZodError || err instanceof SyntaxError ? 'invalid_response' : 'request_failed')

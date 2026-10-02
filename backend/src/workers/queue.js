@@ -8,6 +8,7 @@ export const QUEUES = {
   aiAnalysis: 'ai-analysis',
   slackNotification: 'slack-notification',
   githubIssue: 'github-issue',
+  pipelineAnalysis: 'pipeline-analysis',
 }
 
 const DEFAULT_JOB_OPTIONS = {

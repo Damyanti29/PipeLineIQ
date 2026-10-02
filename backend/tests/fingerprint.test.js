@@ -52,6 +52,12 @@ describe('normalizeMessage', () => {
     )
   })
 
+  it('replaces numbers glued to a unit', () => {
+    expect(normalizeMessage('connect ETIMEDOUT 10.0.3.17:5432 after 4321ms (heap 512MB)')).toBe(
+      'connect ETIMEDOUT <n>.<n>:<n> after <n> (heap <n>)',
+    )
+  })
+
   it('keeps meaningful text such as property names', () => {
     expect(normalizeMessage("Cannot read properties of undefined (reading 'name')")).toBe(
       "Cannot read properties of undefined (reading 'name')",

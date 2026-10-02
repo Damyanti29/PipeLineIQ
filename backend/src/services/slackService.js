@@ -4,6 +4,7 @@ import { decrypt, encrypt, signState, verifyState } from '../utils/crypto.js'
 import { badRequest, notConfigured, notFound } from '../utils/httpError.js'
 import { logger } from '../utils/logger.js'
 import { redactSecrets } from '../utils/redact.js'
+import { displayLocation } from './fingerprintService.js'
 
 const SLACK_API = 'https://slack.com/api'
 const SCOPES = ['chat:write', 'chat:write.public', 'incoming-webhook']
@@ -119,7 +120,7 @@ const truncate = (text, max) => (text && text.length > max ? `${text.slice(0, ma
 
 export function buildErrorAlertBlocks({ incident, error, repository, frontendUrl = env.frontendUrl }) {
   const ai = error.ai_analysis?.status === 'completed' ? error.ai_analysis : null
-  const location = error.file_name ? `${error.file_name}${error.line_number ? `:${error.line_number}` : ''}` : 'unknown'
+  const location = displayLocation(error) ?? 'unknown'
   const blocks = [
     { type: 'header', text: { type: 'plain_text', text: '🚨 PipelineIQ Alert', emoji: true } },
     {
@@ -217,4 +218,71 @@ export async function sendTestMessage(userId) {
 export async function canWorkspaceActOnIncident(workspaceId, incidentId) {
   const context = await loadIncidentContext(incidentId)
   return Boolean(context?.integration && context.integration.workspace_id === workspaceId)
+}
+
+// ─── Push monitoring alerts ─────────────────────────────────────
+
+export function buildPipelineAlertBlocks({ alert, repository }) {
+  const ai = alert.analysis ?? {}
+  const sha7 = alert.commit_sha.slice(0, 7)
+  const ci = alert.source === 'ci_failure'
+  const commitLine = `<${alert.commit_url}|\`${sha7}\`> ${truncate(redactSecrets((alert.commit_message ?? '').split('\n')[0]), 150)}`
+  const blocks = [
+    { type: 'header', text: { type: 'plain_text', text: ci ? `🚨 CI failed: ${truncate(alert.workflow_name ?? 'workflow', 120)}` : '🔍 Bug found in a push', emoji: true } },
+    { type: 'section', text: { type: 'mrkdwn', text: `*${truncate(redactSecrets(alert.title ?? ''), 300)}*` } },
+    {
+      type: 'section',
+      fields: [
+        { type: 'mrkdwn', text: `*Repository:*\n${repository.full_name}` },
+        { type: 'mrkdwn', text: `*Severity:*\n${SEVERITY_EMOJI[alert.severity] ?? ''} ${(alert.severity ?? 'unknown').toUpperCase()}` },
+        { type: 'mrkdwn', text: `*Branch:*\n\`${truncate(alert.branch ?? 'unknown', 100)}\`` },
+        { type: 'mrkdwn', text: `*Pushed by:*\n${alert.actor ?? 'unknown'}` },
+        { type: 'mrkdwn', text: `*Commit:*\n${commitLine}` },
+      ],
+    },
+  ]
+  if (ai.rootCause) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*AI Diagnosis:*\n${truncate(redactSecrets(ai.rootCause), 2500)}` } })
+  if (ai.suggestedFix) blocks.push({ type: 'section', text: { type: 'mrkdwn', text: `*Suggested Fix:*\n${truncate(redactSecrets(ai.suggestedFix), 2500)}` } })
+  blocks.push({
+    type: 'section',
+    text: {
+      type: 'mrkdwn',
+      text: alert.fix_pr_url
+        ? `🛠️ *Fix PR ready to review and merge:* <${alert.fix_pr_url}|#${alert.fix_pr_number}>`
+        : `_No automatic fix PR: ${truncate(alert.fix_note ?? 'no safe change found', 300)}_`,
+    },
+  })
+  blocks.push({
+    type: 'actions',
+    elements: [
+      ...(alert.fix_pr_url ? [{ type: 'button', style: 'primary', text: { type: 'plain_text', text: 'Review Fix PR' }, url: alert.fix_pr_url, action_id: 'view_fix_pr' }] : []),
+      ...(alert.run_url ? [{ type: 'button', text: { type: 'plain_text', text: 'View Failed Run' }, url: alert.run_url, action_id: 'view_run' }] : []),
+      { type: 'button', text: { type: 'plain_text', text: 'View Commit' }, url: alert.commit_url, action_id: 'view_commit' },
+    ],
+  })
+  return blocks
+}
+
+export async function sendPipelineAlert(alert, repository) {
+  const integration = await getIntegration(repository.user_id)
+  if (!integration) return { skipped: 'slack_not_connected' }
+  if (alert.slack_message_ts) return { skipped: 'already_sent' }
+
+  const kind = alert.source === 'ci_failure' ? 'CI failed' : 'Bug found'
+  const result = await postMessage(integration, {
+    text: `🚨 ${kind} in ${repository.full_name} (${alert.branch}): ${alert.title}${alert.fix_pr_url ? ` — fix PR ${alert.fix_pr_url}` : ''}`,
+    blocks: buildPipelineAlertBlocks({ alert, repository }),
+  })
+  if (result.ok) {
+    unwrap(await requireAdmin().from('pipeline_alerts').update({ slack_channel_id: result.channel, slack_message_ts: result.ts }).eq('id', alert.id))
+  }
+  return result
+}
+
+// Threaded follow-up on a pipeline alert (e.g. the fix PR was merged).
+export async function sendPipelineUpdate(alert, repository, text) {
+  const integration = await getIntegration(repository.user_id)
+  if (!integration) return { skipped: 'slack_not_connected' }
+  const threaded = alert.slack_message_ts && alert.slack_channel_id === integration.channel_id
+  return postMessage(integration, { text, ...(threaded ? { thread_ts: alert.slack_message_ts } : {}) })
 }

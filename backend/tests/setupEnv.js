@@ -3,11 +3,13 @@
 Object.assign(process.env, {
   NODE_ENV: 'test',
   FRONTEND_URL: 'http://localhost:5173',
+  PUBLIC_API_URL: '',
   SUPABASE_URL: 'http://supabase.test',
   SUPABASE_ANON_KEY: 'test-anon-key',
   SUPABASE_SERVICE_ROLE_KEY: 'test-service-role-key',
   GITHUB_APP_ID: '',
   GITHUB_APP_PRIVATE_KEY: '',
+  GITHUB_APP_PRIVATE_KEY_PATH: '',
   GITHUB_CLIENT_ID: '',
   GITHUB_CLIENT_SECRET: '',
   GITHUB_WEBHOOK_SECRET: 'test-webhook-secret',

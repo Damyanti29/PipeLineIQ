@@ -4,6 +4,7 @@ import { Worker } from 'bullmq'
 import { assertProductionConfig } from '../config/env.js'
 import * as errorService from '../services/errorService.js'
 import * as incidentService from '../services/incidentService.js'
+import * as pipelineService from '../services/pipelineService.js'
 import * as slackService from '../services/slackService.js'
 import { logger } from '../utils/logger.js'
 import { QUEUES, closeQueues, createRedisConnection, initQueues, warnThrottled } from './queue.js'
@@ -18,6 +19,7 @@ const processors = {
     return slackService.sendIncidentUpdate(incidentId, type)
   },
   [QUEUES.githubIssue]: (job) => incidentService.createGithubIssueAsOwner(job.data.incidentId),
+  [QUEUES.pipelineAnalysis]: (job) => pipelineService.processPipelineEvent(job.data),
 }
 
 const CONCURRENCY = {
@@ -25,6 +27,7 @@ const CONCURRENCY = {
   [QUEUES.aiAnalysis]: 2,
   [QUEUES.slackNotification]: 5,
   [QUEUES.githubIssue]: 2,
+  [QUEUES.pipelineAnalysis]: 2,
 }
 
 function startWorkers() {

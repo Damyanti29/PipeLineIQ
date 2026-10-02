@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from 'react-router-dom'
 import {
-  LayoutDashboard, GitBranch, Bug, AlertTriangle,
+  LayoutDashboard, GitBranch, GitPullRequest, Bug, AlertTriangle,
   Plug, Settings, LogOut, ChevronLeft, ChevronRight, X,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { to: '/repositories', icon: GitBranch,       label: 'Repositories' },
   { to: '/errors',       icon: Bug,             label: 'Errors' },
   { to: '/incidents',    icon: AlertTriangle,   label: 'Incidents' },
+  { to: '/pipeline',     icon: GitPullRequest,  label: 'Push monitoring' },
   { to: '/integrations', icon: Plug,            label: 'Integrations' },
   { to: '/settings',     icon: Settings,        label: 'Settings' },
 ]

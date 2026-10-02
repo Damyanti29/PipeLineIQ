@@ -12,6 +12,12 @@ const STATUS_CONFIG = {
   pending:       { label: 'Pending',       className: 'badge-low' },
   merged:        { label: 'Merged',        className: 'badge-open' },
   closed:        { label: 'Closed',        className: 'badge-default' },
+  analyzing:     { label: 'Analyzing',     className: 'badge-low' },
+  no_issue:      { label: 'No issue',      className: 'badge-default' },
+  alerted:       { label: 'Needs a fix',   className: 'badge-high' },
+  fix_proposed:  { label: 'Fix PR ready',  className: 'badge-open' },
+  dismissed:     { label: 'Dismissed',     className: 'badge-default' },
+  failed:        { label: 'Analysis failed', className: 'badge-critical' },
 }
 
 export function StatusBadge({ status, className }) {

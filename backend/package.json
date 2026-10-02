@@ -13,6 +13,8 @@
     "dev": "node --watch src/server.js",
     "worker": "node src/workers/errorWorker.js",
     "worker:dev": "node --watch src/workers/errorWorker.js",
+    "simulate": "node scripts/simulate.js",
+    "check-env": "node scripts/check-env.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "jest": {

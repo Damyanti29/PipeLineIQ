@@ -77,7 +77,7 @@ Full error row plus `repository`, `recent_events` (last 20 occurrences) and `inc
 ```json
 { "status": "pending" }
 { "status": "completed", "severity": "critical", "rootCause": "…", "explanation": "…",
-  "suggestedFix": "…", "affectedArea": "…", "model": "gemini-2.5-flash", "analyzedAt": "…" }
+  "suggestedFix": "…", "affectedArea": "…", "model": "gemini-3.5-flash", "analyzedAt": "…" }
 { "status": "unavailable", "reason": "not_configured | request_failed | invalid_response | gemini_http_429", "analyzedAt": "…" }
 ```
 
@@ -120,6 +120,16 @@ Body `{ "status": "open" | "investigating" | "resolved" | "ignored" }`. Sets `re
 ### `POST /api/incidents/:id/github-issue`
 Creates a GitHub issue with the error, repository, occurrences, stack trace, AI diagnosis and suggested fix. It is idempotent: `201 { created: true, github_issue_number, github_issue_url }` the first time, then `200 { created: false, … }`. Concurrent requests get `409`. Closing the issue on GitHub resolves the incident, through the `issues` webhook.
 
+## Push monitoring
+
+Every push to a monitored repository is reviewed by Gemini, and every failed GitHub Actions run is diagnosed from its logs. When Gemini's search/replace edits all apply exactly, the fix is committed to a new `pipelineiq/fix-<sha>-<id>` branch and opened as a pull request against the pushed branch. The Slack alert links the PR. PipelineIQ never merges. Pushes to `pipelineiq/*` branches, bot pushes and commits containing `[skip pipelineiq]` are ignored. Push reviews alert only at ≥ 80% confidence and severity above low. A failed CI run is always alerted, even when Gemini is unavailable. Turn parts off with `PUSH_REVIEW=false` or `AUTO_FIX_PR=false`.
+
+### `GET /api/pipeline-alerts`
+Query: `status?` (`analyzing|no_issue|alerted|fix_proposed|resolved|dismissed|failed`), `repositoryId?`, `includeClean?` (include pushes with no issue), `limit?`. Each alert has `source` (`ci_failure|diff_review`), branch, commit, workflow and run links, `analysis { rootCause, explanation, suggestedFix, severity, confidence, edits, model }`, `fix_pr_number`, `fix_pr_url`, `fix_note` (why no PR), and `repository { … }`.
+
+### `PATCH /api/pipeline-alerts/:id/status`
+Body `{ "status": "resolved" | "dismissed" | "alerted" }`. Merging the fix PR on GitHub resolves the alert automatically (`pull_request.closed` webhook) and posts in the Slack thread.
+
 ---
 
 ## GitHub
@@ -137,7 +147,7 @@ Creates a GitHub issue with the error, repository, occurrences, stack trace, AI 
 ### `POST /api/webhooks/github`
 Verified with `X-Hub-Signature-256` (HMAC-SHA256 of the **raw** body using `GITHUB_WEBHOOK_SECRET`, compared in constant time). Invalid or missing signatures get `401` and the payload is never processed.
 
-Handled events: `push`, `pull_request`, `workflow_run`, `deployment`, `deployment_status`, `issues` are stored per monitored repository and are idempotent on `X-GitHub-Delivery`. `issues.closed` resolves incidents linked to that issue. `installation.deleted` removes the installation and pauses its repositories. `ping` is acknowledged. Response: `202`.
+Handled events: `push`, `pull_request`, `workflow_run`, `deployment`, `deployment_status`, `issues` are stored per monitored repository and are idempotent on `X-GitHub-Delivery`. `issues.closed` resolves incidents linked to that issue. `push` and failed `workflow_run` events start push monitoring (above); merging a `pipelineiq/fix-*` pull request resolves its alert. `installation.deleted` removes the installation and pauses its repositories. `ping` is acknowledged. Response: `202`.
 
 ## Slack
 

@@ -7,6 +7,7 @@ import errorRoutes from './routes/errorRoutes.js'
 import githubRoutes from './routes/githubRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
 import incidentRoutes from './routes/incidentRoutes.js'
+import pipelineRoutes from './routes/pipelineRoutes.js'
 import repositoryRoutes from './routes/repositoryRoutes.js'
 import slackRoutes from './routes/slackRoutes.js'
 import webhookRoutes from './routes/webhookRoutes.js'
@@ -49,6 +50,7 @@ export function createApp() {
   app.use('/api/repositories', repositoryRoutes)
   app.use('/api/errors', errorRoutes)
   app.use('/api/incidents', incidentRoutes)
+  app.use('/api/pipeline-alerts', pipelineRoutes)
   app.use('/api/slack', slackRoutes)
   app.use('/api/webhooks', webhookRoutes)
 

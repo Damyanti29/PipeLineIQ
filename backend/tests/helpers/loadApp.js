@@ -12,6 +12,7 @@ export const QUEUES = {
   aiAnalysis: 'ai-analysis',
   slackNotification: 'slack-notification',
   githubIssue: 'github-issue',
+  pipelineAnalysis: 'pipeline-analysis',
 }
 
 function unwrap({ data, error }) {

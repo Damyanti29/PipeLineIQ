@@ -56,6 +56,25 @@ describe('analyzeError', () => {
     })
   })
 
+  it('falls back to the latest model when the configured one is retired', async () => {
+    const ok = await geminiResponse(JSON.stringify(validAnalysis))()
+    const fetchImpl = jest.fn().mockResolvedValueOnce({ ok: false, status: 404, json: async () => ({}) }).mockResolvedValueOnce(ok)
+    const result = await analyzeError(error, repository, { fetchImpl })
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(fetchImpl.mock.calls[1][0]).toContain('gemini-flash-latest')
+    expect(result).toMatchObject({ status: 'completed', model: 'gemini-flash-latest' })
+  })
+
+  it('retries an overloaded model once, then falls back to the next model', async () => {
+    const ok = await geminiResponse(JSON.stringify(validAnalysis))()
+    const overloaded = { ok: false, status: 503, json: async () => ({}) }
+    const fetchImpl = jest.fn().mockResolvedValueOnce(overloaded).mockResolvedValueOnce(overloaded).mockResolvedValueOnce(ok)
+    const result = await analyzeError(error, repository, { fetchImpl })
+    expect(fetchImpl).toHaveBeenCalledTimes(3)
+    expect(fetchImpl.mock.calls[1][0]).toBe(fetchImpl.mock.calls[0][0]) // same model retried
+    expect(result).toMatchObject({ status: 'completed', model: 'gemini-flash-latest' })
+  })
+
   it('marks analysis unavailable on HTTP errors', async () => {
     const fetchImpl = geminiResponse('', { ok: false, status: 429 })
     expect(await analyzeError(error, repository, { fetchImpl })).toMatchObject({ status: 'unavailable', reason: 'gemini_http_429' })

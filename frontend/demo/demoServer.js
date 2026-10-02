@@ -95,6 +95,52 @@ const events = [
   id: `g${i}`, delivery_id: `d${i}`, event_type, action: null, title, status, ref, sha: `9f8e7d6c5b4a${i}`, actor, url: 'https://github.com', created_at: ago(age),
 }))
 
+const pipelineAlerts = [
+  {
+    id: 'p0000000-0000-4000-8000-000000000001', repository_id: repos[0].id, source: 'ci_failure', status: 'fix_proposed', severity: 'high',
+    title: 'Expense filter test fails: category is undefined for uncategorised expenses', branch: 'feat/filters',
+    commit_sha: '9f8e7d6c5b4a4', commit_message: 'feat: add expense category filters', commit_url: 'https://github.com/acme/splitwise-app/commit/9f8e7d6c5b4a4',
+    actor: 'Demo User', workflow_name: 'CI · test & build', workflow_run_id: 9001, run_url: 'https://github.com/acme/splitwise-app/actions/runs/9001',
+    fix_branch: 'pipelineiq/fix-9f8e7d6-a1b2', fix_pr_number: 61, fix_pr_url: 'https://github.com/acme/splitwise-app/pull/61', fix_note: null,
+    analysis: {
+      severity: 'high', confidence: 0.93, model: 'gemini-3.5-flash',
+      rootCause: 'filterByCategory() reads expense.category.id, but expenses created before categories existed have category = null.',
+      explanation: 'The new test "filters uncategorised expenses" passes a legacy expense, so the filter throws TypeError and the suite fails.',
+      suggestedFix: 'Use optional chaining and treat a missing category as "uncategorised" in src/utils/filters.js.',
+    },
+    created_at: ago(6 * HOUR),
+  },
+  {
+    id: 'p0000000-0000-4000-8000-000000000002', repository_id: repos[1].id, source: 'diff_review', status: 'alerted', severity: 'critical',
+    title: 'AWS secret key committed in config/storage.js', branch: 'main',
+    commit_sha: '3c2b1a0f9e8d7', commit_message: 'chore: switch uploads to S3', commit_url: 'https://github.com/acme/api-gateway/commit/3c2b1a0f9e8d7',
+    actor: 'Demo User', workflow_name: null, workflow_run_id: null, run_url: null,
+    fix_branch: null, fix_pr_number: null, fix_pr_url: null,
+    fix_note: 'Gemini did not find a safe code change for this. See the suggested fix.',
+    analysis: {
+      severity: 'critical', confidence: 0.97, model: 'gemini-3.5-flash',
+      rootCause: 'A hard-coded AWS secret access key was pushed to main in config/storage.js.',
+      explanation: 'Anyone with read access to the repository can use the key. Removing it from the code does not remove it from git history.',
+      suggestedFix: 'Rotate the key in AWS IAM now, then read it from process.env.AWS_SECRET_ACCESS_KEY.',
+    },
+    created_at: ago(2 * HOUR),
+  },
+  {
+    id: 'p0000000-0000-4000-8000-000000000003', repository_id: repos[2].id, source: 'ci_failure', status: 'resolved', severity: 'medium',
+    title: 'Build fails: MetricList imports a renamed hook', branch: 'develop',
+    commit_sha: '7a6b5c4d3e2f1', commit_message: 'refactor: rename useMetrics to useMetricData', commit_url: 'https://github.com/acme/dashboard-ui/commit/7a6b5c4d3e2f1',
+    actor: 'Demo User', workflow_name: 'Build', workflow_run_id: 9002, run_url: 'https://github.com/acme/dashboard-ui/actions/runs/9002',
+    fix_branch: 'pipelineiq/fix-7a6b5c4-c3d4', fix_pr_number: 44, fix_pr_url: 'https://github.com/acme/dashboard-ui/pull/44', fix_note: null,
+    analysis: {
+      severity: 'medium', confidence: 0.99, model: 'gemini-3.5-flash',
+      rootCause: 'src/MetricList.jsx still imports useMetrics, which was renamed to useMetricData in this commit.',
+      explanation: 'Vite fails to resolve the import, so the production build stops.',
+      suggestedFix: 'Update the import and the call in src/MetricList.jsx to useMetricData.',
+    },
+    created_at: ago(DAY), resolved_at: ago(20 * HOUR),
+  },
+]
+
 // ─── Derived views (same shapes as the backend) ─────────────────
 const repoRef = (id) => { const r = repos.find((x) => x.id === id); return { id: r.id, name: r.name, full_name: r.full_name, html_url: r.html_url } }
 const statsFor = (repoId) => {
@@ -174,6 +220,16 @@ const routes = [
       return created({ created: true, github_issue_number: inc.github_issue_number, github_issue_url: inc.github_issue_url })
     }
     return { created: false, github_issue_number: inc.github_issue_number, github_issue_url: inc.github_issue_url }
+  }],
+  ['GET', /^\/api\/pipeline-alerts$/, (_, q) => pipelineAlerts
+    .filter((a) => (!q.get('status') || a.status === q.get('status')) && (!q.get('repositoryId') || a.repository_id === q.get('repositoryId')))
+    .map((a) => ({ ...a, repository: repoRef(a.repository_id) }))],
+  ['PATCH', /^\/api\/pipeline-alerts\/([\w-]+)\/status$/, ([id], _, body) => {
+    const alert = pipelineAlerts.find((a) => a.id === id)
+    if (!alert) return fail(404, 'Pipeline alert not found')
+    alert.status = body.status
+    alert.resolved_at = body.status === 'resolved' ? new Date().toISOString() : null
+    return alert
   }],
   ['GET', /^\/api\/repositories$/, () => repos.map(({ ingest_key: _k, ...r }) => ({ ...r, stats: statsFor(r.id) }))],
   ['POST', /^\/api\/repositories$/, () => (fail(400, 'Adding repositories is disabled in demo mode'))],

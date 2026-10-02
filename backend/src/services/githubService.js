@@ -182,3 +182,78 @@ export async function removeInstallation(installationId) {
   unwrap(await admin.from('repositories').update({ monitoring_enabled: false }).eq('installation_id', installationId))
   tokenCache.delete(installationId)
 }
+
+// ─── Push monitoring: code, CI logs and fix pull requests ───────
+
+const encodePath = (filePath) => filePath.split('/').map(encodeURIComponent).join('/')
+
+// Plain-text GitHub endpoints (job logs redirect to signed storage URLs; fetch drops the token there).
+async function githubText(urlPath, token) {
+  const response = await fetch(`${API}${urlPath}`, {
+    headers: { Authorization: `Bearer ${token}`, 'User-Agent': 'PipelineIQ', 'X-GitHub-Api-Version': '2022-11-28' },
+    signal: AbortSignal.timeout(30000),
+  })
+  if (!response.ok) throw new HttpError(502, `GitHub API error: ${response.status}`, { code: 'github_error' })
+  return response.text()
+}
+
+// Files changed by a push (compare) or a single commit, with their patches.
+export async function getChangedFiles(token, fullName, { before, after }) {
+  const isNewBranch = !before || /^0+$/.test(before)
+  const data = isNewBranch
+    ? await githubRequest(`/repos/${fullName}/commits/${after}`, { token })
+    : await githubRequest(`/repos/${fullName}/compare/${before}...${after}`, { token })
+  return (data.files ?? []).map((f) => ({ path: f.filename, status: f.status, patch: f.patch ?? '' }))
+}
+
+// File content at a commit, or null for missing, binary or oversized files.
+export async function getFileContent(token, fullName, filePath, ref, maxBytes = 120_000) {
+  try {
+    const data = await githubRequest(`/repos/${fullName}/contents/${encodePath(filePath)}?ref=${encodeURIComponent(ref)}`, { token })
+    if (Array.isArray(data) || data.type !== 'file' || !data.content || data.size > maxBytes) return null
+    const text = Buffer.from(data.content, 'base64').toString('utf8')
+    return text.includes('\u0000') ? null : text
+  } catch (error) {
+    if (error.githubStatus === 404) return null
+    throw error
+  }
+}
+
+// Failed jobs of a workflow run with the tail of each job's log.
+export async function getFailedJobLogs(token, fullName, runId, { maxJobs = 3 } = {}) {
+  const { jobs = [] } = await githubRequest(`/repos/${fullName}/actions/runs/${runId}/jobs?filter=latest&per_page=50`, { token })
+  const failed = jobs.filter((job) => ['failure', 'timed_out'].includes(job.conclusion)).slice(0, maxJobs)
+  return Promise.all(
+    failed.map(async (job) => ({
+      name: job.name,
+      failedSteps: (job.steps ?? []).filter((s) => s.conclusion === 'failure').map((s) => s.name),
+      log: await githubText(`/repos/${fullName}/actions/jobs/${job.id}/logs`, token).catch(() => ''),
+    })),
+  )
+}
+
+// One commit on a new branch with the changed files, then a ready-for-review pull request.
+export async function createFixPullRequest(token, fullName, { baseSha, baseBranch, branch, files, commitMessage, title, body }) {
+  const baseCommit = await githubRequest(`/repos/${fullName}/git/commits/${baseSha}`, { token })
+  const tree = await githubRequest(`/repos/${fullName}/git/trees`, {
+    token,
+    method: 'POST',
+    body: {
+      base_tree: baseCommit.tree.sha,
+      tree: Object.entries(files).map(([filePath, content]) => ({ path: filePath, mode: '100644', type: 'blob', content })),
+    },
+  })
+  const commit = await githubRequest(`/repos/${fullName}/git/commits`, {
+    token,
+    method: 'POST',
+    body: { message: commitMessage, tree: tree.sha, parents: [baseSha] },
+  })
+  await githubRequest(`/repos/${fullName}/git/refs`, { token, method: 'POST', body: { ref: `refs/heads/${branch}`, sha: commit.sha } })
+  const pr = await githubRequest(`/repos/${fullName}/pulls`, {
+    token,
+    method: 'POST',
+    body: { title, head: branch, base: baseBranch, body, maintainer_can_modify: true },
+  })
+  await githubRequest(`/repos/${fullName}/issues/${pr.number}/labels`, { token, method: 'POST', body: { labels: ['pipelineiq'] } }).catch(() => {})
+  return pr
+}

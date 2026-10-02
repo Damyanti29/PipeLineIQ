@@ -14,6 +14,7 @@ const RepositoryDetailPage = page(() => import('@/pages/RepositoryDetailPage'), 
 const ErrorsPage = page(() => import('@/pages/ErrorsPage'), 'ErrorsPage')
 const ErrorDetailPage = page(() => import('@/pages/ErrorDetailPage'), 'ErrorDetailPage')
 const IncidentsPage = page(() => import('@/pages/IncidentsPage'), 'IncidentsPage')
+const PipelinePage = page(() => import('@/pages/PipelinePage'), 'PipelinePage')
 const IntegrationsPage = page(() => import('@/pages/IntegrationsPage'), 'IntegrationsPage')
 const SettingsPage = page(() => import('@/pages/SettingsPage'), 'SettingsPage')
 
@@ -33,6 +34,7 @@ export default function App() {
           <Route path="/errors" element={<ErrorsPage />} />
           <Route path="/errors/:id" element={<ErrorDetailPage />} />
           <Route path="/incidents" element={<IncidentsPage />} />
+          <Route path="/pipeline" element={<PipelinePage />} />
           <Route path="/integrations" element={<IntegrationsPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Route>

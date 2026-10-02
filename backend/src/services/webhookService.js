@@ -1,7 +1,10 @@
+import { features } from '../config/env.js'
 import { requireAdmin, unwrap } from '../supabase/adminClient.js'
 import { logger } from '../utils/logger.js'
+import { QUEUES, enqueueOrRun } from '../workers/queue.js'
 import * as githubService from './githubService.js'
 import * as incidentService from './incidentService.js'
+import * as pipelineService from './pipelineService.js'
 import * as repositoryService from './repositoryService.js'
 
 export const TRACKED_EVENTS = ['push', 'pull_request', 'workflow_run', 'deployment', 'deployment_status', 'issues']
@@ -106,6 +109,24 @@ export async function handleGithubEvent({ event, deliveryId, payload }) {
     }
   }
 
-  logger.info('GitHub webhook processed', { event, deliveryId, repositories: repositories.length, resolved })
-  return { handled: event, repositories: repositories.length, resolvedIncidents: resolved }
+  const repositoryIds = repositories.map((repo) => repo.id)
+  const pr = payload.pull_request
+  if (event === 'pull_request' && payload.action === 'closed' && pr?.merged && pr.head?.ref?.startsWith(pipelineService.FIX_BRANCH_PREFIX)) {
+    resolved += await pipelineService.resolveByFixBranch(repositoryIds, pr.head.ref)
+  }
+
+  // Push monitoring runs in the background so GitHub gets its response within its 10 s timeout.
+  let pipeline = null
+  if (features.pushMonitoring && ['push', 'workflow_run'].includes(event)) {
+    const trigger = pipelineService.extractTrigger(event, payload)
+    pipeline = trigger.skip ? { skipped: trigger.skip } : { queued: trigger.source }
+    if (!trigger.skip) {
+      await enqueueOrRun(QUEUES.pipelineAnalysis, { trigger, repositoryIds }, () =>
+        pipelineService.processPipelineEvent({ trigger, repositoryIds }),
+      )
+    }
+  }
+
+  logger.info('GitHub webhook processed', { event, deliveryId, repositories: repositories.length, resolved, pipeline })
+  return { handled: event, repositories: repositories.length, resolvedIncidents: resolved, ...(pipeline ? { pipeline } : {}) }
 }

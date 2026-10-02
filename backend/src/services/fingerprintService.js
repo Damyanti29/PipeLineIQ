@@ -8,7 +8,8 @@ const MESSAGE_RULES = [
   [/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g, '<email>'],
   [/\b0x[0-9a-f]+\b/gi, '<hex>'],
   [/\b[0-9a-f]{12,}\b/gi, '<hex>'],
-  [/\b\d+(?:\.\d+)?\b/g, '<n>'],
+  // Numbers, including ones glued to a unit (4321ms, 512MB, 30s), which never hit a \b after the digits.
+  [/\b\d+(?:\.\d+)?(?:ms|s|m|h|b|kb|mb|gb|px|%)?\b/gi, '<n>'],
 ]
 
 export function normalizeMessage(message = '') {
@@ -37,4 +38,11 @@ export function generateFingerprint({ repositoryId, errorType, message, fileName
     lineNumber ?? '',
   ]
   return sha256Hex(parts.join('\u001f'))
+}
+
+// "file:line" for titles, alerts and issues: no origin or query string (which can carry tokens).
+export function displayLocation({ file_name: fileName, line_number: lineNumber }) {
+  if (!fileName) return null
+  const file = normalizeFileName(fileName).replace(/^\/+/, '') || fileName
+  return lineNumber ? `${file}:${lineNumber}` : file
 }

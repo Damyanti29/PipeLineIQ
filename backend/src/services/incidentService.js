@@ -4,6 +4,7 @@ import { conflict, forbidden, notFound } from '../utils/httpError.js'
 import { logger } from '../utils/logger.js'
 import { redactSecrets } from '../utils/redact.js'
 import { QUEUES, enqueueOrRun } from '../workers/queue.js'
+import { displayLocation } from './fingerprintService.js'
 import * as githubService from './githubService.js'
 import * as slackService from './slackService.js'
 
@@ -20,7 +21,7 @@ export function shouldOpenIncident(error) {
 }
 
 export function incidentTitle(error) {
-  const location = error.file_name ? ` in ${error.file_name}${error.line_number ? `:${error.line_number}` : ''}` : ''
+  const location = error.file_name ? ` in ${displayLocation(error)}` : ''
   return `${error.error_type}${location}`.slice(0, 200)
 }
 
@@ -91,7 +92,7 @@ export async function updateIncidentStatus(db, id, status) {
 
 export function buildIssueBody(incident, error, repository) {
   const ai = error.ai_analysis?.status === 'completed' ? error.ai_analysis : null
-  const location = error.file_name ? `${error.file_name}${error.line_number ? `:${error.line_number}` : ''}` : 'unknown'
+  const location = displayLocation(error) ?? 'unknown'
   return [
     `## ${error.error_type}: ${redactSecrets(error.message)}`,
     '',

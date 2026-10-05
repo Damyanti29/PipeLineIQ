@@ -3,10 +3,12 @@ node_modules/
 dist/
 coverage/
 
-# Environment files: never commit secrets. Only the .env.example templates are tracked.
+# Environment & secret files: never commit secrets. Only the .env.example templates are tracked.
 .env
 .env.*
 !.env.example
+*.pem
+*.key
 
 # Private keys (e.g. the GitHub App .pem)
 *.pem

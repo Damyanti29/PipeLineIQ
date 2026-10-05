@@ -15,6 +15,7 @@
     "worker:dev": "node --watch src/workers/errorWorker.js",
     "simulate": "node scripts/simulate.js",
     "check-env": "node scripts/check-env.js",
+    "webhook:listen": "smee -u https://smee.io/Fj9m730wLGsz3bTq -t http://localhost:5000/api/github/webhook",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "jest": {

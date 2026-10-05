@@ -9,6 +9,20 @@ function assertConfigured() {
   if (!features.githubApp) throw notConfigured('GitHub')
 }
 
+let clockSkewMs = 0
+let clockSkewSynced = false
+
+async function syncClockSkew() {
+  try {
+    const res = await fetch('https://api.github.com', { method: 'HEAD', signal: AbortSignal.timeout(5000) })
+    const ghDate = res.headers.get('date')
+    if (ghDate) {
+      clockSkewMs = new Date(ghDate).getTime() - Date.now()
+      clockSkewSynced = true
+    }
+  } catch {}
+}
+
 export async function githubRequest(path, { token, method = 'GET', body, fetchImpl = fetch } = {}) {
   const response = await fetchImpl(path.startsWith('http') ? path : `${API}${path}`, {
     method,
@@ -22,6 +36,11 @@ export async function githubRequest(path, { token, method = 'GET', body, fetchIm
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(15000),
   })
+  const ghDate = response.headers?.get?.('date')
+  if (ghDate) {
+    clockSkewMs = new Date(ghDate).getTime() - Date.now()
+    clockSkewSynced = true
+  }
   const data = response.status === 204 ? null : await response.json().catch(() => null)
   if (!response.ok) {
     const error = new HttpError(response.status === 404 ? 404 : 502, `GitHub API error: ${data?.message ?? response.status}`, {
@@ -33,11 +52,20 @@ export async function githubRequest(path, { token, method = 'GET', body, fetchIm
   return data
 }
 
-const appJwt = () => createGithubAppJwt(env.githubAppId, env.githubAppPrivateKey)
+async function appJwt() {
+  if (!clockSkewSynced) {
+    await syncClockSkew()
+  }
+  const nowSeconds = Math.floor((Date.now() + clockSkewMs) / 1000)
+  return createGithubAppJwt(env.githubAppId, env.githubAppPrivateKey, nowSeconds)
+}
 
 let appInfoCache = null
 async function getAppInfo() {
-  appInfoCache ??= await githubRequest('/app', { token: appJwt() })
+  if (!appInfoCache) {
+    const jwt = await appJwt()
+    appInfoCache = await githubRequest('/app', { token: jwt })
+  }
   return appInfoCache
 }
 
@@ -45,9 +73,10 @@ const tokenCache = new Map()
 export async function getInstallationToken(installationId) {
   assertConfigured()
   const cached = tokenCache.get(installationId)
-  if (cached && cached.expiresAt - Date.now() > 5 * 60 * 1000) return cached.token
+  if (cached && cached.expiresAt - (Date.now() + clockSkewMs) > 5 * 60 * 1000) return cached.token
 
-  const data = await githubRequest(`/app/installations/${installationId}/access_tokens`, { token: appJwt(), method: 'POST' })
+  const jwt = await appJwt()
+  const data = await githubRequest(`/app/installations/${installationId}/access_tokens`, { token: jwt, method: 'POST' })
   tokenCache.set(installationId, { token: data.token, expiresAt: new Date(data.expires_at).getTime() })
   return data.token
 }
@@ -56,9 +85,8 @@ export async function getInstallationToken(installationId) {
 
 export async function getConnectUrl(userId) {
   assertConfigured()
-  const { slug } = await getAppInfo()
   const state = signState({ uid: userId, p: 'github' })
-  return `https://github.com/apps/${slug}/installations/new?state=${encodeURIComponent(state)}`
+  return `https://github.com/login/oauth/authorize?client_id=${env.githubClientId}&redirect_uri=${encodeURIComponent(env.githubRedirectUri)}&state=${encodeURIComponent(state)}`
 }
 
 async function exchangeCodeForUserToken(code) {

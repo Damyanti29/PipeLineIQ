@@ -10,7 +10,15 @@ export function LoginPage() {
   const { isAuthenticated, isConfigured, signIn, signUp, signInWithGitHub, resetPassword } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+  // Links can pick the form: <Link to="/login" state={{ mode: 'signup' }}> (or 'signin').
+  const requestedMode = location.state?.mode === 'signup' ? 'signup' : 'signin'
+  const [mode, setMode] = useState(requestedMode) // 'signin' | 'signup'
+  // Also when that link is followed while /login is already open (e.g. from the Helpline).
+  const [modeLocationKey, setModeLocationKey] = useState(location.key)
+  if (modeLocationKey !== location.key) {
+    setModeLocationKey(location.key)
+    if (location.state?.mode) setMode(requestedMode)
+  }
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

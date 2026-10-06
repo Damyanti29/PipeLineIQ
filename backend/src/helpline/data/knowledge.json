@@ -1,0 +1,344 @@
+[
+  {
+    "category": "general",
+    "question": "What is PipelineIQ?",
+    "answer": "PipelineIQ is an AI-powered error and incident monitoring tool for GitHub repositories. It captures errors from your applications with a small JavaScript SDK, groups duplicate errors together, asks Google Gemini for a root-cause diagnosis, opens an incident and posts one Slack alert per problem instead of one per occurrence. It also watches your pushes and failed GitHub Actions runs, diagnoses them with Gemini and can open a ready-to-merge fix pull request.",
+    "keywords": ["pipelineiq", "overview", "about", "platform", "monitoring", "purpose"]
+  },
+  {
+    "category": "general",
+    "question": "What are the main features of PipelineIQ?",
+    "answer": "PipelineIQ has these main areas, each in the left sidebar: 1. Dashboard: totals, a 14-day error chart, repository health and recent incidents. 2. Repositories: choose which GitHub repositories to monitor and get the SDK DSN. 3. Errors: grouped errors with severity, occurrences, stack trace and the Gemini AI diagnosis. 4. Incidents: problems that need attention, with statuses and one-click GitHub issues. 5. Push monitoring: CI failure diagnosis, push reviews and automatic fix PRs. 6. Integrations: connect GitHub and Slack. 7. Settings: profile, password and appearance.",
+    "keywords": ["features", "capabilities", "pages", "sections", "sidebar", "modules"]
+  },
+  {
+    "category": "general",
+    "question": "How does PipelineIQ work end to end?",
+    "answer": "1. Your app reports an error with the PipelineIQ SDK. 2. The API checks the repository's ingest key and queues the event. 3. The error is fingerprinted and grouped with identical errors. 4. Only when the group is new, or a resolved error comes back (a regression), Gemini analyzes it. 5. If it is severe enough, an incident is opened and one Slack alert is posted. 6. You can create a GitHub issue from the incident; closing that issue resolves the incident. Separately, GitHub webhooks for pushes and workflow runs feed push monitoring and the repository activity feed.",
+    "keywords": ["workflow", "flow", "architecture", "end to end", "process", "how it works"]
+  },
+  {
+    "category": "general",
+    "question": "What technology is PipelineIQ built with?",
+    "answer": "The frontend is React 19 with Vite, Tailwind CSS, React Router, Axios, Recharts and Lucide icons. The backend is Node.js 20+ with Express 5 and Zod validation. Data and sign-in use Supabase (PostgreSQL with Row Level Security, and Supabase Auth). Background jobs use Redis and BullMQ. Integrations are a GitHub App, Slack OAuth and the Google Gemini API. Tests use Jest and Supertest.",
+    "keywords": ["technology", "stack", "react", "node", "express", "supabase", "redis", "tech"]
+  },
+  {
+    "category": "getting_started",
+    "question": "How do I get started with PipelineIQ?",
+    "answer": "1. Sign up and sign in. 2. Open Integrations and click Connect GitHub, choose your account and repositories, then click Install & Authorize. 3. Open Repositories, click Add from GitHub and pick the repositories to monitor. 4. Open a repository, copy the DSN from SDK setup and add the PipelineIQ SDK to your app. 5. Back in Integrations, click Connect Slack, choose the alert channel, then click Send test alert.",
+    "keywords": ["start", "begin", "onboarding", "setup", "first steps", "new user", "quick start"]
+  },
+  {
+    "category": "repository",
+    "question": "How do I add a repository to PipelineIQ?",
+    "answer": "1. Connect GitHub first (Integrations, Connect GitHub). 2. Open Repositories and click Add from GitHub. 3. Use the filter to find the repository and click to add it. Added repositories show Monitoring ✓. If a repository is missing from the list, click Manage installation and give the PipelineIQ GitHub App access to it.",
+    "keywords": ["add", "repository", "monitor", "github", "connect repo", "missing repository", "manage installation"]
+  },
+  {
+    "category": "repository",
+    "question": "How do I install the PipelineIQ SDK and send my first error?",
+    "answer": "The SDK (@pipelineiq/sdk) is not on npm yet; install it from the PipelineIQ repository folder sdk/javascript. Then: import PipelineIQ from '@pipelineiq/sdk'; PipelineIQ.init({ dsn: 'YOUR_PROJECT_DSN', environment: 'production' }); and report errors with PipelineIQ.captureException(error) or PipelineIQ.captureMessage('text', { level: 'warning' }). Uncaught errors and unhandled promise rejections are captured automatically unless you pass captureUnhandled: false. The error appears under Errors within seconds.",
+    "keywords": ["sdk", "install", "capture", "captureexception", "init", "javascript", "send error", "first error"]
+  },
+  {
+    "category": "repository",
+    "question": "Where do I find my DSN?",
+    "answer": "Open Repositories, click the repository, and look in the SDK setup section. The DSN looks like http://<ingestKey>@<host>:<port>/<repositoryId>. The ingest key inside it can only submit errors for that one repository and cannot read any data.",
+    "keywords": ["dsn", "ingest key", "sdk setup", "key", "repository id", "connection string"]
+  },
+  {
+    "category": "repository",
+    "question": "What SDK options are available?",
+    "answer": "PipelineIQ.init accepts: dsn (required), environment (default production), release (version or commit), captureUnhandled (default true), sampleRate (fraction of events to send, 0 to 1), metadata (extra data added to every event, max 10KB), beforeSend(event) to change an event or return null to drop it, and debug (logs delivery failures to the console).",
+    "keywords": ["sdk", "options", "config", "samplerate", "beforesend", "environment", "release", "debug", "metadata"]
+  },
+  {
+    "category": "repository",
+    "question": "How do I pause or enable monitoring for a repository?",
+    "answer": "Open the repository from Repositories and click the monitoring button at the top: Monitoring active means it is on (click to pause), Enable monitoring turns it back on. While a repository is paused, errors sent by the SDK are rejected with 'Monitoring is disabled for this repository', push monitoring skips it, and its health shows as paused.",
+    "keywords": ["pause", "disable", "enable", "monitoring", "toggle", "stop monitoring", "turn off"]
+  },
+  {
+    "category": "repository",
+    "question": "What is shown on the repository detail page?",
+    "answer": "The repository page shows open errors, critical errors and open incidents for that repository, a 14-day error events chart, recent GitHub activity (pushes, pull requests, workflow runs, deployments and issues from verified webhooks), the SDK setup with the DSN, recent errors with a View all link, an Open on GitHub link and the monitoring toggle.",
+    "keywords": ["repository page", "detail", "activity", "github activity", "repository stats"]
+  },
+  {
+    "category": "dashboard",
+    "question": "What does the PipelineIQ dashboard show?",
+    "answer": "The Dashboard shows four totals: Repositories, Open errors, Critical and Open incidents. Below them are the Error events chart for the last 14 days (switch between All events and Critical), Repository health for each monitored repository, Recent incidents, and the System status panel. If GitHub or Slack is not connected yet, it shows a prompt to connect them.",
+    "keywords": ["dashboard", "overview", "stats", "cards", "chart", "home", "totals"]
+  },
+  {
+    "category": "dashboard",
+    "question": "What does repository health mean?",
+    "answer": "Repository health is calculated from real data in this order: paused when monitoring is disabled, critical when the repository has open critical errors, warning when it has any other open errors, and healthy when it has no open errors.",
+    "keywords": ["health", "healthy", "warning", "critical", "paused", "status", "repository health"]
+  },
+  {
+    "category": "dashboard",
+    "question": "What do the System status panel and the API online pill mean?",
+    "answer": "The System status panel on the Dashboard and Integrations pages shows each service: green means working, amber means credentials are missing, red means unreachable. The pill in the top bar says API online or API offline and re-checks the backend every 30 seconds.",
+    "keywords": ["system status", "api online", "api offline", "pill", "green", "amber", "red", "services"]
+  },
+  {
+    "category": "dashboard",
+    "question": "What is the error events chart?",
+    "answer": "The Error events chart on the Dashboard counts error occurrences per day for the last 14 days across your repositories. Use the All events and Critical buttons to switch between all events and only critical ones. Each repository page has the same chart for that repository.",
+    "keywords": ["chart", "trend", "graph", "14 days", "events", "error events"]
+  },
+  {
+    "category": "error",
+    "question": "How does PipelineIQ group duplicate errors?",
+    "answer": "Every error gets a fingerprint: a SHA-256 hash of the repository, error type, normalized message, normalized file and line. The message is normalized by replacing ids, numbers, hex values, URLs, emails and timestamps, and the file by removing origins, query strings and bundler hashes. Errors with the same fingerprint become one group whose occurrences count and last seen time go up, so 100 identical errors produce one analysis and one alert.",
+    "keywords": ["group", "grouping", "duplicate", "fingerprint", "occurrences", "deduplicate", "same error"]
+  },
+  {
+    "category": "error",
+    "question": "How is error severity decided?",
+    "answer": "Severity is critical, high, medium or low. A rule-based estimate is used first: in production, messages about out of memory, fatal errors, database, ECONNREFUSED, ETIMEDOUT, deadlocks or payments are critical; TypeError, ReferenceError, SyntaxError, RangeError, ChunkLoadError and UnhandledRejection are high in production and medium elsewhere. When the Gemini analysis completes, its severity replaces the estimate.",
+    "keywords": ["severity", "critical", "high", "medium", "low", "priority", "how serious"]
+  },
+  {
+    "category": "error",
+    "question": "What is the AI diagnosis?",
+    "answer": "The AI diagnosis on an error's page is produced by Google Gemini. It contains the root cause, an explanation, a suggested fix and the affected area. It runs only for new error groups and regressions, not for every repeat. Gemini receives only debugging fields (error type, message, file, line, environment, path without query string and a truncated stack trace) with credentials redacted first; metadata and user agents are never sent. If Gemini is not configured or fails, the diagnosis shows as unavailable.",
+    "keywords": ["ai", "diagnosis", "gemini", "root cause", "suggested fix", "analysis", "explanation"]
+  },
+  {
+    "category": "error",
+    "question": "What do the error statuses open, resolved and ignored mean?",
+    "answer": "Open errors need attention. On an error's page, click Resolve when it is fixed or Ignore when it does not matter; either one also closes the error's active incident. If a resolved error happens again it is a regression: the group reopens, and a new incident and Slack alert are created.",
+    "keywords": ["status", "open", "resolved", "ignored", "resolve", "ignore", "close error"]
+  },
+  {
+    "category": "error",
+    "question": "What is a regression?",
+    "answer": "A regression is an error group that was resolved and then occurs again. PipelineIQ reopens the group, runs a fresh Gemini analysis, and opens a new incident and Slack alert, so a returning bug is never missed.",
+    "keywords": ["regression", "came back", "reoccur", "reopen", "returned", "again"]
+  },
+  {
+    "category": "error",
+    "question": "How do I search and filter errors?",
+    "answer": "Open Errors in the sidebar. Search by type, message or file, filter by severity (Critical, High, Medium, Low), by status (Open, Resolved, Ignored) and by repository, and sort by Last seen, Occurrences or Severity. The search box in the top bar also jumps to Errors with your search.",
+    "keywords": ["search", "filter", "sort", "find error", "errors page", "list"]
+  },
+  {
+    "category": "error",
+    "question": "What is shown on the error detail page?",
+    "answer": "An error's page shows the file and line, occurrences, first seen and last seen times, repository, environment and linked incident, the stack trace, recent occurrences, and the Gemini AI diagnosis (root cause, explanation, suggested fix). From there you can Resolve or Ignore the error and Create GitHub issue for its active incident.",
+    "keywords": ["error detail", "stack trace", "occurrences", "error page", "first seen", "last seen"]
+  },
+  {
+    "category": "incident",
+    "question": "What is an incident and when is one created?",
+    "answer": "An incident is a problem that needs someone's attention. PipelineIQ opens one automatically for a new or regressed error group that is open and severe enough: critical and high always, medium only in production, low never. Each error has at most one active incident, and a new incident triggers the Slack alert.",
+    "keywords": ["incident", "created", "open incident", "when", "threshold", "alerting rules"]
+  },
+  {
+    "category": "incident",
+    "question": "What do the incident statuses mean?",
+    "answer": "Incidents move from open to investigating, then to resolved or ignored. Change the status on the Incidents page, where you can filter by All, Open, Investigating, Resolved and Ignored. Resolving or ignoring the error closes its incident too, and closing the linked GitHub issue resolves the incident automatically.",
+    "keywords": ["incident status", "open", "investigating", "resolved", "ignored", "lifecycle"]
+  },
+  {
+    "category": "incident",
+    "question": "How do I create a GitHub issue from an incident?",
+    "answer": "Click Create issue on the incident in the Incidents page, Create GitHub issue on the error page, or Create GitHub Issue in the Slack alert. The issue is created only once per incident, and its number and link are stored on the incident. Closing the issue on GitHub resolves the incident. GitHub must be connected.",
+    "keywords": ["github issue", "create issue", "issue", "ticket", "track"]
+  },
+  {
+    "category": "pipeline",
+    "question": "What is push monitoring?",
+    "answer": "Push monitoring watches every monitored repository on GitHub. 1. Push review: Gemini reviews the changed code of each push and alerts only when it is confident there is a real bug. 2. CI failure diagnosis: when a GitHub Actions run fails, Gemini reads the failed job logs and the code they point at. 3. Fix PR: the suggested fix is opened as a pull request. 4. A Slack alert links everything. Results are listed on the Push monitoring page. It needs the GitHub App, its webhook, Gemini and Slack configured.",
+    "keywords": ["push monitoring", "push review", "ci", "pipeline", "github actions", "workflow", "push"]
+  },
+  {
+    "category": "pipeline",
+    "question": "How does PipelineIQ diagnose a failed CI run?",
+    "answer": "When a GitHub Actions workflow run fails, the GitHub webhook notifies PipelineIQ. It downloads the failed job logs, finds the files they reference, and asks Gemini for the root cause and an exact fix. The result appears on the Push monitoring page and in Slack, with a fix PR when the fix applies cleanly. CI analysis needs GitHub Actions workflows in the repository; a failed run is still alerted even if Gemini is down.",
+    "keywords": ["ci failure", "failed run", "github actions", "workflow run", "logs", "build failed", "tests failed"]
+  },
+  {
+    "category": "pipeline",
+    "question": "What is a fix PR?",
+    "answer": "A fix PR is a pull request PipelineIQ opens with Gemini's suggested fix. It is committed to a new branch named pipelineiq/fix-* and targets the branch you pushed; PipelineIQ never pushes to your existing branches. It is only opened when every edit applies exactly to the code. Merging it marks the alert resolved and posts a 'Fix PR merged' reply in the Slack thread.",
+    "keywords": ["fix pr", "pull request", "automatic fix", "branch", "pipelineiq/fix", "merge"]
+  },
+  {
+    "category": "pipeline",
+    "question": "What do the push monitoring statuses mean?",
+    "answer": "On the Push monitoring page: Fix PR ready means a fix pull request was opened; Needs a fix means a problem was found but no fix PR was opened; Resolved means the fix was merged or you closed it; Analysis failed means the analysis could not complete. Alerts can also be dismissed. Pushes where no issue was found are hidden by default.",
+    "keywords": ["status", "fix pr ready", "needs a fix", "resolved", "analysis failed", "dismiss", "push monitoring page"]
+  },
+  {
+    "category": "pipeline",
+    "question": "How do I skip PipelineIQ for a commit?",
+    "answer": "Add [skip pipelineiq] to the commit message and that push is not reviewed. PipelineIQ also ignores tag pushes, deleted branches, pushes by bots and its own pipelineiq/ fix branches.",
+    "keywords": ["skip", "ignore commit", "skip pipelineiq", "commit message", "exclude"]
+  },
+  {
+    "category": "pipeline",
+    "question": "How do I turn off push review or automatic fix PRs?",
+    "answer": "In backend/.env set PUSH_REVIEW=false to analyze only failed CI runs instead of every push, or AUTO_FIX_PR=false to send Slack alerts without opening fix pull requests. Restart the backend afterwards.",
+    "keywords": ["push_review", "auto_fix_pr", "disable", "turn off", "settings", "configuration"]
+  },
+  {
+    "category": "pipeline",
+    "question": "How can I test push monitoring?",
+    "answer": "Push a commit with an obvious bug to a monitored repository, for example importing a function name that does not exist, or push a change that makes a GitHub Actions test fail. Within about a minute you should see a Slack alert, a pipelineiq/fix-* pull request on GitHub and the alert on the Push monitoring page. Without touching GitHub, run npm run simulate in backend/ to watch both flows against live Gemini.",
+    "keywords": ["test", "try", "simulate", "verify", "demo push", "end to end"]
+  },
+  {
+    "category": "integration",
+    "question": "How do I connect GitHub?",
+    "answer": "1. Open Integrations and click Connect GitHub. 2. On GitHub choose your account, choose All repositories or Only select repositories, then click Install & Authorize. 3. You return to PipelineIQ and the GitHub card says Connected. 4. Go to Repositories to add the repositories to monitor. The server must have the GitHub App credentials configured in backend/.env.",
+    "keywords": ["github", "connect github", "github app", "install", "authorize", "integration"]
+  },
+  {
+    "category": "integration",
+    "question": "What permissions does the PipelineIQ GitHub App need?",
+    "answer": "Repository permissions: Metadata read, Contents read and write, Issues read and write, Pull requests read and write, Actions read, Deployments read. Write access to Contents and Pull requests is only used to open fix PRs on new branches. Subscribe to the events Push, Pull request, Workflow run, Deployment, Deployment status and Issues. After changing permissions, accept them on the installation.",
+    "keywords": ["permissions", "github app", "scopes", "contents", "pull requests", "events", "webhook events"]
+  },
+  {
+    "category": "integration",
+    "question": "How do I connect Slack?",
+    "answer": "1. For a private channel, first type /invite @YourApp in that channel. 2. In PipelineIQ open Integrations and click Connect Slack. 3. Pick the alert channel and click Allow. 4. Back in PipelineIQ the Slack card says Connected; click Send test alert to check. Slack requires an https redirect, so locally the backend's PUBLIC_API_URL must be a tunnel URL such as ngrok.",
+    "keywords": ["slack", "connect slack", "channel", "oauth", "integration", "workspace"]
+  },
+  {
+    "category": "integration",
+    "question": "How do I disconnect Slack?",
+    "answer": "Open Integrations and click Disconnect on the Slack card, then confirm. Alerts stop being posted. You can connect again at any time with Connect Slack.",
+    "keywords": ["disconnect", "remove slack", "stop alerts", "slack"]
+  },
+  {
+    "category": "integration",
+    "question": "How is Gemini configured?",
+    "answer": "Gemini is configured on the server: set GEMINI_API_KEY in backend/.env (create a key at Google AI Studio). GEMINI_MODEL is optional and defaults to gemini-3.5-flash; if that model is retired or overloaded, PipelineIQ retries and falls back to gemini-flash-latest and gemini-flash-lite-latest. Without a key, errors are still grouped and alerted, and the diagnosis shows as unavailable.",
+    "keywords": ["gemini", "ai", "api key", "model", "google", "configure ai"]
+  },
+  {
+    "category": "integration",
+    "question": "Do I need Redis?",
+    "answer": "Redis is optional. Without it, background jobs (AI analysis, Slack alerts, GitHub issues, fix PRs) run inside the API process, which is fine for development. For reliable retries in real deployments, run Redis 6.2+ and start the worker with npm run worker in backend/.",
+    "keywords": ["redis", "worker", "queue", "bullmq", "background jobs"]
+  },
+  {
+    "category": "notification",
+    "question": "When does PipelineIQ send Slack alerts?",
+    "answer": "PipelineIQ sends one Slack alert per problem, not one per occurrence: when a new incident is opened for a new or regressed error that is severe enough (critical and high always, medium only in production, low never), and when push monitoring finds a failed CI run or a confirmed bug in a push. Repeats of an existing error do not alert again. Follow-up updates are posted in the same Slack thread.",
+    "keywords": ["slack alert", "alert", "when", "notification", "trigger", "how often"]
+  },
+  {
+    "category": "notification",
+    "question": "What does a Slack alert contain?",
+    "answer": "An error alert shows the repository, severity, error, file and line, occurrences, environment, the AI diagnosis and suggested fix, with buttons View Error, View GitHub and Create GitHub Issue. A push monitoring alert shows the diagnosis and suggested fix with a Review Fix PR button when a fix PR was opened.",
+    "keywords": ["slack message", "alert content", "buttons", "view error", "review fix pr", "block kit"]
+  },
+  {
+    "category": "notification",
+    "question": "How do I send a test Slack alert?",
+    "answer": "Open Integrations and click Send test alert on the connected Slack card. A test message should appear in the chosen channel. If it does not, see the Slack troubleshooting steps.",
+    "keywords": ["test alert", "send test", "slack test", "check slack"]
+  },
+  {
+    "category": "account",
+    "question": "How do I sign up or sign in?",
+    "answer": "Open the login page. Create an account with your name, email and password, or sign in with your email and password. If email confirmation is on, check your inbox and confirm before signing in. Continue with GitHub is available when the Supabase GitHub provider is configured.",
+    "keywords": ["sign up", "register", "signin", "account", "create account", "log in"]
+  },
+  {
+    "category": "account",
+    "question": "How do I reset or change my password?",
+    "answer": "If you forgot it: on the login page enter your email and click Forgot password?, and a reset link is sent if the account exists. If you are signed in: open Settings, go to Change password, enter the new password twice and save.",
+    "keywords": ["password", "reset", "forgot password", "change password"]
+  },
+  {
+    "category": "account",
+    "question": "How do I change my display name?",
+    "answer": "Open Settings and edit Display name in the Profile section, then save. Your name appears at the bottom of the sidebar.",
+    "keywords": ["display name", "name", "profile", "settings", "rename"]
+  },
+  {
+    "category": "account",
+    "question": "How do I switch between dark and light mode?",
+    "answer": "Use the theme toggle at the bottom of the sidebar, or Appearance in Settings.",
+    "keywords": ["theme", "dark mode", "light mode", "appearance", "colors"]
+  },
+  {
+    "category": "account",
+    "question": "Is my data private and secure in PipelineIQ?",
+    "answer": "Yes. Every request is authenticated with your Supabase session, and database Row Level Security means you can only see data for your own repositories. Slack tokens are stored encrypted (AES-256-GCM) and never returned by the API. Credentials are redacted before anything is sent to Gemini or Slack. GitHub webhooks and Slack requests are verified by signature.",
+    "keywords": ["privacy", "security", "data", "secure", "rls", "who can see", "encryption"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why is my pipeline failing?",
+    "answer": "1. Open Push monitoring: a failed GitHub Actions run appears there with Gemini's root cause, suggested fix and, when possible, a fix PR. 2. Open the run link to see the failing job on GitHub. 3. If a fix PR is listed, review and merge it; the alert resolves automatically. 4. If nothing is listed, check that the repository is added and monitoring is active, the GitHub webhook is reaching PipelineIQ (GitHub App, Advanced, Recent Deliveries), and the commit message does not contain [skip pipelineiq].",
+    "keywords": ["pipeline failing", "ci failing", "build failing", "tests failing", "workflow failed", "broken build", "failed run"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why are my errors not showing up in PipelineIQ?",
+    "answer": "1. Check the DSN in PipelineIQ.init matches the one in Repository, SDK setup. 2. Make sure the repository's monitoring is active; paused repositories reject errors. 3. Check the backend is running: the top bar should say API online. 4. A 401 Invalid ingest key means the DSN is wrong. 5. Check sampleRate is not 0 and beforeSend does not return null. 6. Set debug: true in PipelineIQ.init to log delivery failures in the console.",
+    "keywords": ["errors not showing", "no errors", "sdk not working", "missing errors", "not appearing", "ingest"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why does nothing happen when I push?",
+    "answer": "The GitHub webhook is probably not reaching PipelineIQ. 1. Make sure the tunnel (ngrok) and backend are running. 2. In GitHub App settings, Advanced, Recent Deliveries shows each delivery's response. 3. Check the repository is added in PipelineIQ and monitoring is active. 4. Check PUSH_REVIEW is not false. 5. Pushes with [skip pipelineiq], tag pushes, bot pushes and pipelineiq/ branches are ignored on purpose. 6. Push review only alerts when Gemini is confident there is a real bug.",
+    "keywords": ["push", "nothing happens", "webhook", "no alert", "not triggered", "deliveries"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why was no fix PR opened?",
+    "answer": "Open the alert on Push monitoring and read its note. 'could not be applied exactly' means Gemini's edit did not match the code; this is expected safety behavior and the suggested fix is still in the alert. '403 Resource not accessible by integration' means the GitHub App's new permissions were not accepted on the installation. No PR is opened when AUTO_FIX_PR=false or when the fix is not a code change.",
+    "keywords": ["no fix pr", "fix pr missing", "pull request not created", "403", "could not be applied"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why am I not receiving Slack alerts?",
+    "answer": "1. In Integrations, check Slack shows Connected and click Send test alert. 2. For a private channel, invite the app with /invite @YourApp. 3. Remember only new or regressed severe problems alert: low severity never, medium only in production, and repeats do not alert again. 4. If Slack worked before and stopped after a restart, APP_ENCRYPTION_KEY changed; restore it or reconnect Slack. 5. With Redis configured, make sure the worker (npm run worker) is running.",
+    "keywords": ["slack", "no alerts", "not receiving", "alerts missing", "slack not working", "notification"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why does the AI diagnosis say unavailable?",
+    "answer": "The diagnosis is unavailable when GEMINI_API_KEY is not set on the server, the key was rejected or revoked (create a new one in Google AI Studio), Gemini was overloaded (PipelineIQ retries and falls back to other models automatically), or Gemini returned an invalid response. Errors are still grouped and alerted without it.",
+    "keywords": ["ai unavailable", "diagnosis unavailable", "gemini error", "no analysis", "api key rejected"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why does PipelineIQ say API offline or cannot reach the API?",
+    "answer": "1. Start the backend with npm run dev in backend/ (it listens on port 5000). 2. If it reports 'Port 5000 is already in use', stop the other process or change PORT. 3. Make sure FRONTEND_URL in backend/.env matches the address you open the dashboard on, otherwise CORS blocks requests. 4. Check http://localhost:5000/api/health returns status ok.",
+    "keywords": ["api offline", "cannot reach", "backend down", "connection", "cors", "port in use"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why can't I connect GitHub?",
+    "answer": "Run npm run check-env in backend/ first. Common causes: the GitHub App's Callback URL does not match (set it to the URL printed by check-env and tick Request user authorization (OAuth) during installation); 'App authentication failed' means the private key belongs to another app or was deleted, so generate a new key and keep only one .pem in backend/; missing permissions need to be accepted on the installation.",
+    "keywords": ["github connect", "callback url", "github app error", "private key", "installation", "oauth"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why can't I connect Slack?",
+    "answer": "'redirect URL is not https' means PUBLIC_API_URL is not set to an https tunnel URL. 'bad_redirect_uri' means the redirect URL printed by npm run check-env is not added under OAuth & Permissions in the Slack app. Also check SLACK_CLIENT_ID and SLACK_CLIENT_SECRET in backend/.env.",
+    "keywords": ["slack connect", "bad_redirect_uri", "redirect", "https", "slack oauth"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "Why can't I sign in?",
+    "answer": "1. If you just signed up, confirm your email from the inbox first. 2. Use Forgot password? on the login page to reset your password. 3. If the sign-in form is disabled, Supabase is not configured: SUPABASE_URL and SUPABASE_ANON_KEY must be set in backend/.env. 4. In Supabase Authentication, URL Configuration, the Site URL should be http://localhost:5173 for local use.",
+    "keywords": ["cannot sign in", "login failed", "signin problem", "auth", "session"]
+  },
+  {
+    "category": "troubleshooting",
+    "question": "How do I check my PipelineIQ configuration?",
+    "answer": "Run npm run check-env in backend/. It checks every credential against the live services and prints ✔, or ✘ with the exact fix and the URLs to register. Errors such as 'database tables are missing' mean the Supabase migrations were not run (run supabase/setup_all.sql), and 'push monitoring table is missing' means the pipeline_alerts migration was not run.",
+    "keywords": ["check-env", "configuration", "env", "verify setup", "tables missing", "migrations"]
+  }
+]

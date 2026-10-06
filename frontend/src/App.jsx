@@ -1,5 +1,6 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route } from 'react-router-dom'
+import { HelplineWidget } from '@/components/helpline/HelplineWidget'
 import { DashboardLayout } from '@/layouts/DashboardLayout'
 import { LoadingState } from '@/components/ui/LoadingState'
 import { LandingPage } from '@/pages/LandingPage'
@@ -20,27 +21,34 @@ const SettingsPage = page(() => import('@/pages/SettingsPage'), 'SettingsPage')
 
 export default function App() {
   return (
-    <Suspense fallback={<LoadingState fullScreen />}>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
+    <>
+      <Suspense fallback={<LoadingState fullScreen />}>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-        {/* Authenticated (DashboardLayout redirects to /login without a session) */}
-        <Route element={<DashboardLayout />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/repositories" element={<RepositoriesPage />} />
-          <Route path="/repositories/:id" element={<RepositoryDetailPage />} />
-          <Route path="/errors" element={<ErrorsPage />} />
-          <Route path="/errors/:id" element={<ErrorDetailPage />} />
-          <Route path="/incidents" element={<IncidentsPage />} />
-          <Route path="/pipeline" element={<PipelinePage />} />
-          <Route path="/integrations" element={<IntegrationsPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Route>
+          {/* Authenticated (DashboardLayout redirects to /login without a session) */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/repositories" element={<RepositoriesPage />} />
+            <Route path="/repositories/:id" element={<RepositoryDetailPage />} />
+            <Route path="/errors" element={<ErrorsPage />} />
+            <Route path="/errors/:id" element={<ErrorDetailPage />} />
+            <Route path="/incidents" element={<IncidentsPage />} />
+            <Route path="/pipeline" element={<PipelinePage />} />
+            <Route path="/integrations" element={<IntegrationsPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Route>
 
-        <Route path="*" element={<NotFoundPage />} />
-      </Routes>
-    </Suspense>
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
+      </Suspense>
+
+      {/* On every page, signed in or not. Mounted once here so the conversation survives navigation
+          (e.g. to /login and back). Answers still require sign-in: the widget checks the session
+          before calling the API, and the API itself is behind requireAuth. */}
+      <HelplineWidget />
+    </>
   )
 }

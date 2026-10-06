@@ -219,6 +219,10 @@ In the dashboard: **Integrations → Connect Slack**, then choose the alert chan
 
 Without a key, errors are still grouped and alerted. The diagnosis is marked "unavailable".
 
+## Helpline (in-app help bot)
+
+The round help button on every page answers questions about PipelineIQ only (sign-in required to get an answer). It uses intent classification (TF-IDF + logistic regression), knowledge from the Supabase table `helpline_knowledge`, and the same Gemini key. One-time setup: run `supabase/migrations/20261006000005_helpline_knowledge.sql`, then `npm run helpline:seed` in `backend/`. Evaluate it with `npm run helpline:eval`. See [docs/HELPLINE.md](docs/HELPLINE.md).
+
 ## Send your first error
 
 Open a repository in the dashboard, copy the DSN from **SDK setup**, and:

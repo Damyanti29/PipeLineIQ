@@ -6,6 +6,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorMiddleware.js'
 import errorRoutes from './routes/errorRoutes.js'
 import githubRoutes from './routes/githubRoutes.js'
 import healthRoutes from './routes/healthRoutes.js'
+import helplineRoutes from './routes/helplineRoutes.js'
 import incidentRoutes from './routes/incidentRoutes.js'
 import pipelineRoutes from './routes/pipelineRoutes.js'
 import repositoryRoutes from './routes/repositoryRoutes.js'
@@ -52,6 +53,7 @@ export function createApp() {
   app.use('/api/incidents', incidentRoutes)
   app.use('/api/pipeline-alerts', pipelineRoutes)
   app.use('/api/slack', slackRoutes)
+  app.use('/api/helpline', helplineRoutes)
   app.use('/api/webhooks', webhookRoutes)
 
   app.use(notFoundHandler)

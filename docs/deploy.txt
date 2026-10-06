@@ -1,0 +1,76 @@
+The free setup is Vercel for the frontend, Render for the backend, and the Supabase project you already have. The backend can't go on Vercel: after answering a GitHub webhook it keeps working in the background (Gemini, Slack, fix PRs), and Vercel's serverless functions stop as soon as the response is sent. 
+Render runs it as a normal always-on server.
+
+Step 1: Frontend on Vercel
+Go to https://vercel.com, sign in with GitHub, click Add New → Project and import Damyanti29/PipeLineIQ.
+Set Root Directory to frontend. The framework should be detected as Vite.
+Under Environment Variables, add:
+VITE_SUPABASE_URL: same as SUPABASE_URL in backend/.env
+VITE_SUPABASE_ANON_KEY: same as SUPABASE_ANON_KEY (the public key, never the service-role key)
+VITE_API_URL: put https://placeholder.onrender.com for now; you'll fix it in Step 4
+Click Deploy and note your URL, e.g. https://pipelineiq-xyz.vercel.app.
+Step 2: Backend on Render
+Go to https://render.com, sign in with GitHub, click New → Web Service and pick the repo.
+Settings:
+Root Directory: backend
+Build Command: npm install
+Start Command: npm start
+Instance Type: Free
+Health Check Path: /api/health (under Advanced)
+Turn the GitHub private key into one line of text. Run this in PowerShell from the project folder and copy the output:
+Add these environment variables, copying values from backend/.env:
+Variable	Value
+NODE_ENV	production
+FRONTEND_URL	your Vercel URL from Step 2 (must be https://, no trailing slash)
+PUBLIC_API_URL	your Render URL, e.g. https://pipelineiq-api.onrender.com (shown at the top of the service page)
+SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY	from .env
+GITHUB_APP_ID, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GITHUB_WEBHOOK_SECRET	from .env
+GITHUB_APP_PRIVATE_KEY	the base64 line from item 3
+SLACK_CLIENT_ID, SLACK_CLIENT_SECRET, SLACK_SIGNING_SECRET	from .env
+GEMINI_API_KEY, GEMINI_MODEL	from .env
+PUSH_REVIEW, AUTO_FIX_PR	true
+APP_ENCRYPTION_KEY	copy the exact value from .env; a new one would make your saved Slack connection unreadable
+Don't set REDIS_URL or PORT. Without Redis, jobs run inside the server, and Render sets the port itself.
+
+Click Create Web Service and wait for "Live". Then open https://<your-api>.onrender.com/api/health; you should see "status":"ok".
+If the deploy fails with "Invalid production configuration", the message names the variable that's wrong.
+
+Step 3: Point the frontend at the backend
+In Vercel, go to Settings → Environment Variables and set VITE_API_URL to your Render URL. Then go to Deployments → ⋯ → Redeploy. This step is required: these variables are baked in when the site is built.
+
+Step 4: Supabase sign-in URLs
+In Supabase, go to Authentication → URL Configuration:
+
+Site URL: your Vercel URL
+Redirect URLs: add https://<your-vercel-url>/**
+Step 5: GitHub App
+Go to https://github.com/settings/apps → pipelineiq-damuuu → Edit:
+
+Callback URL: https://<your-api>.onrender.com/api/github/callback
+Webhook URL: https://<your-api>.onrender.com/api/webhooks/github
+Click Save changes.
+A GitHub App has only one webhook URL, so your local ngrok setup stops receiving pushes after this. Switch it back when you develop locally.
+
+Step 6: Slack app
+Go to https://api.slack.com/apps → your app:
+
+OAuth & Permissions → Redirect URLs: add https://<your-api>.onrender.com/api/slack/callback
+Interactivity & Shortcuts → Request URL: https://<your-api>.onrender.com/api/slack/interactions
+Then reconnect Slack from the deployed app's Integrations page.
+
+Step 7: Keep the backend awake (important)
+Render's free server goes to sleep after 15 minutes without traffic and takes about a minute to wake up. GitHub gives up on a webhook after 10 seconds, so pushes made while it sleeps are missed. To prevent that:
+
+Create a free account at https://uptimerobot.com.
+Add an HTTP(s) monitor for https://<your-api>.onrender.com/api/health, checked every 5 minutes.
+Render's free allowance (750 hours a month) covers one service running all month.
+
+Step 8: Test it
+Open your Vercel URL, sign up, connect GitHub, add a repository, connect Slack and click Send test alert. Ask the Helpline a question, then push a commit and watch the Push monitoring page.
+
+Free-tier limits to know
+Render cold start: if the backend is asleep, the first page load may show "Cannot reach the PipelineIQ API". Wait a minute and refresh. Step 8 mostly prevents this.
+Supabase pauses a free project after about a week with no activity.
+ Click Restore in the Supabase dashboard if that happens.
+No Redis, so a background job that crashes halfway isn't retried. That's fine for a demo or college project.
+Vercel preview links (one per branch) are blocked by the backend's CORS rule, so use the main production URL. To allow another address, add it to FRONTEND_URL, separated by a comma.
